@@ -1,0 +1,11 @@
+Faire le projet:
+-créer la forme
+-créer le maillage progressif et fin aux endroits les plus contraints
+-créer la force hydrostatique 
+-faire un solveur efficace
+-calculer les efforts internes
+-calculer les deplacements 
+-enlever de la matiere en itérant
+-faire un rapport de 2 pages
+-préparer la présentation orale
+-.......
