@@ -9,3 +9,4 @@ V-créer la forme
 -faire un rapport de 2 pages
 -préparer la présentation orale
 -Dans le rapport, garder l'explication des différents barrages en faisant nos propres figures !!
+-On bloque les déplacements dans la direction z donc on est en déformation plane !
