@@ -11,7 +11,19 @@ double geoSize(double x, double y) {
   
   femGeo *theGeometry = geoGetGeometry();
   double h = theGeometry->h;
-  h = 100;
+  int ref;
+  ref = 5;
+  double h1;
+  if(x <= 15) {
+    h = ref;
+  }
+  else if(x > 15 && x <= 50){
+    h = ref + 2*ref*(x-15)/50;
+    
+  }
+  else if(x > 50 && x <= 195){
+    h = 12;
+  }
   //return theGeometry->h * (1.0 - 0.5 * x);
   return h;
 }
