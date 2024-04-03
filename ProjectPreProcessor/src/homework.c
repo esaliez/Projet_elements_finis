@@ -7,26 +7,38 @@
 //  (3) Construire la geometrie avec les outils de GMSH
 //  (4) Obtenir la geometrie en lisant un fichier .geo de GMSH
 
+
+//définir la géométrie
 double geoSize(double x, double y) {
   
   femGeo *theGeometry = geoGetGeometry();
   double h = theGeometry->h;
-  int ref;
-  ref = 5;
-  double h1;
-  if(x <= 15) {
-    h = ref;
+  int h_min = 5; //taille minimale des triangles
+  int h_max = 25; //taille maximale des triangles
+
+  int b_X_1 = 15; //taille de la  zone grande précision coté gauche
+  int b_X_2 = 25; //taille de la zone de transistion entre grande et petite précision
+  int b_X_3 = 195; //taille maximale en x
+
+  int b_Y_1 = 285; //taille maximale en y (début de la zone de grande précision en y)
+  int b_Y_2 = 220; //zone intermédiaire en y (pas utilisée pour l'instant)
+  int b_Y_3 = 0; //fin de zone en y (pas utilisée pour l'instant)
+
+  //zone précise à gauche
+  if(x <= b_X_1) {
+    h = h_min;
   }
-  else if(x > 15 && x <= 50){
-    h = ref + 2*ref*(x-15)/50;
-    
+  //transisition entre la précision à gauche et la zone qui évolue selon y
+  else if(x > b_X_1 && x <= b_X_2){
+    h = h_min + (x - b_X_1)/(b_X_1);
   }
-  else if(x > 50 && x <= 195){
-    h = 12;
+  //zone qui évolue selon y, grande précision en haut et faible en bas
+  else if(x > b_X_2){
+     h = h_min + (b_Y_1-y)/(b_Y_1/h_max);
   }
-  //return theGeometry->h * (1.0 - 0.5 * x);
   return h;
 }
+
 
 void geoMeshGenerate(void) {
   femGeo *theGeometry = geoGetGeometry();
@@ -45,11 +57,9 @@ void geoMeshGenerate(void) {
     ErrorGmsh(ierr);
     int point3 = gmshModelOccAddPoint(40,220, 0, 0, -1, &ierr);
     ErrorGmsh(ierr);
-    int point4 = gmshModelOccAddPoint(30, 245, 0, 0, -1, &ierr);
+    int point4 = gmshModelOccAddPoint(15, 285, 0, 0, -1, &ierr);
     ErrorGmsh(ierr);
-    int point5 = gmshModelOccAddPoint(15, 285, 0, 0, -1, &ierr);
-    ErrorGmsh(ierr);
-    int point6 = gmshModelOccAddPoint(0, 285, 0, 0, -1, &ierr);
+    int point5 = gmshModelOccAddPoint(0, 285, 0, 0, -1, &ierr);
     ErrorGmsh(ierr);
 
     // Créer les lignes à partir des points
@@ -61,14 +71,12 @@ void geoMeshGenerate(void) {
     ErrorGmsh(ierr);
     int idLine4 = gmshModelOccAddLine(point4, point5, -1, &ierr);
     ErrorGmsh(ierr);
-    int idLine5 = gmshModelOccAddLine(point5, point6, -1, &ierr);
-    ErrorGmsh(ierr);
-    int idLine6 = gmshModelOccAddLine(point6, point1, -1, &ierr);
+    int idLine5 = gmshModelOccAddLine(point5, point1, -1, &ierr);
     ErrorGmsh(ierr);
 
     // Créer une boucle de courbes
-    int curveTags[] = {idLine1, idLine2, idLine3, idLine4, idLine5, idLine6};
-    int idCurveLoop = gmshModelOccAddCurveLoop(curveTags, 6, -1, &ierr);
+    int curveTags[] = {idLine1, idLine2, idLine3, idLine4, idLine5};
+    int idCurveLoop = gmshModelOccAddCurveLoop(curveTags, 5, -1, &ierr);
     ErrorGmsh(ierr);
 
     // Ajouter la boucle de courbes au modèle
