@@ -1,6 +1,6 @@
 Faire le projet:
 V-créer la forme 
--créer le maillage progressif et fin aux endroits les plus contraints
+V-créer le maillage progressif et fin aux endroits les plus contraints
 -créer la force hydrostatique 
 -faire un solveur efficace
 -calculer les efforts internes
