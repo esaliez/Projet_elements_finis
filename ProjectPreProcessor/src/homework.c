@@ -43,7 +43,8 @@ double geoSize(double x, double y) {
 void geoMeshGenerate(void) {
   femGeo *theGeometry = geoGetGeometry();
   
-  //theGeometry->h = Lx * 0.05;
+ 
+  //theGeometry->elementType = FEM_QUAD;
   theGeometry->elementType = FEM_TRIANGLE;
   
   geoSetSizeCallback(geoSize);
