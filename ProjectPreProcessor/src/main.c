@@ -1,11 +1,11 @@
 /*
  *  main.c
- *  Projet 2023-2024
+ *  Projet 2022-2023
  *  Elasticite lineaire plane
  *
  *  Preprocesseur
  *
- *  Copyright (C) 2023 UCL-IMMC : Vincent Legat, Miguel De Le Court
+ *  Copyright (C) 2023 UCL-IMMC : Vincent Legat
  *  All rights reserved.
  *
  */
@@ -21,39 +21,47 @@ int main(void) {
   femGeo *theGeometry = geoGetGeometry();
 
   // OPTION 1 : Utilisation de GMSH avec OpenCascade
-   theGeometry->h = 0.05;
+   //theGeometry->h = 0.05;
    geoMeshGenerate();
 
   // OPTION 2 : Utilisation de GMSH directement
   // theGeometry->h = 0.05;
   // geoMeshGenerateGeo();
-
+/*
   // OPTION 3 : Lecture d'un fichier .geo
-  //theGeometry->h = 0.05;
-  //geoMeshGenerateGeoFile("../data/mesh.geo");
+  theGeometry->h = 0.05;
+  geoMeshGenerateGeoFile("../data/mesh.geo");
 
   // OPTION 4 : Lecture d'un fichier .msh
   // geoMeshGenerateMshFile("../data/mesh.msh");
 
-
+*/
   geoMeshImport();
-  geoSetDomainName(0, "Something");
-  geoSetDomainName(1, "SomethingElse");
+  geoSetDomainName(0, "sol");
+  geoSetDomainName(1, "droit_bas");
+  geoSetDomainName(2,"droit_haut");
+  geoSetDomainName(3,"sommet");
+  geoSetDomainName(4,"gauche");
   geoMeshWrite("../data/mesh.txt");
 
   //
   //  -2- Definition du probleme
   //
 
-  double E = 211.e9;
-  double nu = 0.3;
-  double rho = 7.85e3;
+//Notre structure est composée essentiellement de béton
+  double E = 30.e9;//module de young -> 20 à 40 GPa: E_moy = 30*10e9 Pa
+  double nu = 0.2;//coeff de poisson
+  double rho = 2350;//masse volumique -> 2200 à 2500 [kg/m3] : rho_moy = 2350 [kg/m3]
   double gx = 0;
   double gy = -9.81;
 
+//il y a 6 cotés à notre pb, ils sont lus dans le sens trigonométrique en commençant en bas à gauche
   femProblem *theProblem = femElasticityCreate(theGeometry, E, nu, rho, gx, gy, PLANAR_STRAIN);
-  femElasticityAddBoundaryCondition(theProblem, "Something", DIRICHLET_XY, 0.0, 0.0);
-  femElasticityAddBoundaryCondition(theProblem, "SomethingElse", DIRICHLET_Y, 0.0, NAN);
+  femElasticityAddBoundaryCondition(theProblem, "sol", DIRICHLET_XY, 0.0, 0.0);
+  femElasticityAddBoundaryCondition(theProblem, "droit_bas", NEUMANN_X, 0.0, NAN);
+  femElasticityAddBoundaryCondition(theProblem, "droit_haut", NEUMANN_X, 0.0, NAN );
+  femElasticityAddBoundaryCondition(theProblem, "sommet", NEUMANN_X, 0.0, NAN);
+  femElasticityAddBoundaryCondition(theProblem, "gauche", NEUMANN_HYDROSTAT, -rho*gy, NAN);
   femElasticityPrint(theProblem);
   femElasticityWrite(theProblem, "../data/problem.txt");
 

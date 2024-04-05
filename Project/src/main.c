@@ -1,11 +1,11 @@
 /*
  *  main.c
- *  Projet 2023-2024
+ *  Projet 2022-2023
  *  Elasticite lineaire plane
  *
  *  Code de calcul
  *
- *  Copyright (C) 2023 UCL-IMMC : Vincent Legat, Miguel De Le Court
+ *  Copyright (C) 2023 UCL-IMMC : Vincent Legat
  *  All rights reserved.
  *
  */

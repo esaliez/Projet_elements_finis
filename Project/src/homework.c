@@ -1,7 +1,5 @@
 #include "fem.h"
 
-
-// yo la tcheam
 // Il faut un fifrelin generaliser ce code.....
 //  (1) Ajouter l'axisymétrique !    (mandatory)
 //  (2) Ajouter les conditions de Neumann !   (mandatory)
@@ -54,7 +52,8 @@ void femElasticityAssembleElements(femProblem *theProblem) {
         dydeta += y[i] * dphideta[i];
       }
       double jac = dxdxsi * dydeta - dxdeta * dydxsi;
-      if (jac < 0.0) printf("Negative jacobian! Your mesh is oriented in reverse. The normals will be wrong\n");
+      if (jac < 0.0)
+        printf("Negative jacobian! Your mesh is oriented in reverse. The normals will be wrong\n");
       jac = fabs(jac);
 
       for (i = 0; i < theSpace->n; i++) {
@@ -85,24 +84,58 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
   femNodes *theNodes = theGeometry->theNodes;
   femMesh *theEdges = theGeometry->theEdges;
   double x[2], y[2], phi[2];
-  int iBnd, iElem, iInteg, iEdge, i, j, d, map[2], mapU[2];
+  int iBnd, iElem, iInteg, iEdge, i, j, d, map[2];
   int nLocal = 2;
   double *B = theSystem->B;
 
-  for (iBnd = 0; iBnd < theProblem->nBoundaryConditions; iBnd++) {    
+  for (iBnd = 0; iBnd < theProblem->nBoundaryConditions; iBnd++) {
     femBoundaryCondition *theCondition = theProblem->conditions[iBnd];
     femBoundaryType type = theCondition->type;
     double value = theCondition->value1;
 
-    //
-    // A completer :-)
-    // Attention, pour le normal tangent on calcule la normale (sortante) au SEGMENT, surtout PAS celle de constrainedNodes
-    //
-    // Une petite aide pour le calcul de la normale :-)
-    // double tx = theNodes->X[node1] - theNodes->X[node0];
-    // double ty = theNodes->Y[node1] - theNodes->Y[node0];
-    // double nx = ty;
-    // double ny = -tx;
+    if(type != NEUMANN_X && type != NEUMANN_Y && type != NEUMANN_N && type != NEUMANN_T){
+      continue;
+    }
+
+    for (iEdge = 0; iEdge < theCondition->domain->nElem; iEdge++) {
+      iElem = theCondition->domain->elem[iEdge];
+      for (j = 0; j < nLocal; j++) {
+        map[j] = theEdges->elem[iElem * nLocal + j];
+        x[j] = theNodes->X[map[j]];
+        y[j] = theNodes->Y[map[j]];
+      }
+
+      double tx = x[1] - x[0];
+      double ty = y[1] - y[0];
+      double length = hypot(tx, ty);
+      double jac = length / 2.0;
+      
+      double f_x = 0.0;
+      double f_y = 0.0;
+      if (type == NEUMANN_X) {
+        f_x = value;
+      }
+      if (type == NEUMANN_Y) {
+        f_y = value;
+      }
+
+      //
+      // A completer :-)
+      // Attention, pour le normal tangent on calcule la normale (sortante) au SEGMENT, surtout PAS celle de constrainedNodes
+      // Une petite aide pour le calcul de la normale :-)
+      // double nx =  ty / length;
+      // double ny = -tx / length;
+
+      for (iInteg = 0; iInteg < theRule->n; iInteg++) {
+        double xsi = theRule->xsi[iInteg];
+        double weight = theRule->weight[iInteg];
+        femDiscretePhi(theSpace, xsi, phi);
+        for (i = 0; i < theSpace->n; i++) {
+          B[2*map[i] + 0] += jac * weight * phi[i] * f_x;
+          B[2*map[i] + 1] += jac * weight * phi[i] * f_y;
+        }
+      }
+    }
   }
 }
 
@@ -113,7 +146,8 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
 
   for (int node = 0; node < theNodes->nNodes; node++) {
     femConstrainedNode *theConstrainedNode = &theProblem->constrainedNodes[node];
-    if (theConstrainedNode->type == UNDEFINED) continue;
+    if (theConstrainedNode->type == UNDEFINED)
+      continue;
     femBoundaryType type = theConstrainedNode->type;
 
     if (type == DIRICHLET_X) {
@@ -158,7 +192,7 @@ double *femElasticitySolve(femProblem *theProblem) {
   femElasticityAssembleNeumann(theProblem);
   femElasticityApplyDirichlet(theProblem);
 
-  double* soluce = femFullSystemEliminate(theProblem->system);
+  double *soluce = femFullSystemEliminate(theProblem->system);
   memcpy(theProblem->soluce, soluce, theProblem->system->size * sizeof(double));
   return theProblem->soluce;
 }

@@ -70,8 +70,7 @@ void geoMeshImport(void) {
   size_t nNode, n, m, *node;
   double *xyz, *trash;
   //  gmshModelMeshRenumberNodes(&ierr);                        ErrorGmsh(ierr);
-  gmshModelMeshGetNodes(&node, &nNode, &xyz, &n, &trash, &m, -1, -1, 0, 0,
-                        &ierr);
+  gmshModelMeshGetNodes(&node, &nNode, &xyz, &n, &trash, &m, -1, -1, 0, 0, &ierr);
   ErrorGmsh(ierr);
   femNodes *theNodes = malloc(sizeof(femNodes));
   theNodes->nNodes = nNode;
@@ -134,25 +133,26 @@ void geoMeshImport(void) {
   // Compute node renumbering
   femMesh *theElements = theGeometry.theElements;
   int *connectedNodes = calloc(theNodes->nNodes, sizeof(int));
-  for(int iElem = 0; iElem < theElements->nElem; iElem++) {
-    for(int i = 0; i < theElements->nLocalNode; i++) {
-      connectedNodes[theElements->elem[iElem*theElements->nLocalNode+i]] = 1;
+  for (int iElem = 0; iElem < theElements->nElem; iElem++) {
+    for (int i = 0; i < theElements->nLocalNode; i++) {
+      connectedNodes[theElements->elem[iElem * theElements->nLocalNode + i]] = 1;
     }
   }
-  int* nodeRenumber = malloc(theNodes->nNodes * sizeof(int));
+  int *nodeRenumber = malloc(theNodes->nNodes * sizeof(int));
   int countNodes = 0;
-  for(int i = 0; i < theNodes->nNodes; i++) {
-    if(connectedNodes[i]) {
+  for (int i = 0; i < theNodes->nNodes; i++) {
+    if (connectedNodes[i]) {
       nodeRenumber[i] = countNodes;
       countNodes++;
-    } else{
+    } else {
       nodeRenumber[i] = -2147483648;
     }
   }
 
   // condensing nodes
   for (int i = 0; i < theNodes->nNodes; i++) {
-    if(nodeRenumber[i] < 0) continue;
+    if (nodeRenumber[i] < 0)
+      continue;
     theNodes->X[nodeRenumber[i]] = theNodes->X[i];
     theNodes->Y[nodeRenumber[i]] = theNodes->Y[i];
   }
@@ -162,8 +162,8 @@ void geoMeshImport(void) {
 
   // renumbering elements
   int nLocalNode = theElements->nLocalNode;
-  for (int i = 0; i < theElements->nElem; i++){
-    for (int j = 0; j < nLocalNode; j++){
+  for (int i = 0; i < theElements->nElem; i++) {
+    for (int j = 0; j < nLocalNode; j++) {
       theElements->elem[nLocalNode * i + j] = nodeRenumber[theElements->elem[nLocalNode * i + j]];
     }
   }
@@ -176,16 +176,16 @@ void geoMeshImport(void) {
   theEdges->nodes = theNodes;
   theEdges->elem = malloc(sizeof(int) * 2 * theEdges->nElem);
   int countEdges = 0;
-  int* connectedEdges = calloc(nElem, sizeof(int));
-  int* edgeRenumber = malloc(nElem * sizeof(int));
+  int *connectedEdges = calloc(nElem, sizeof(int));
+  int *edgeRenumber = malloc(nElem * sizeof(int));
 
-  for (int i = 0; i < nElem; i++){
-    int map[2] = {node[2*i+0] - 1, node[2*i+1] - 1};
-    if(!connectedNodes[map[0]] || !connectedNodes[map[1]]){
+  for (int i = 0; i < nElem; i++) {
+    int map[2] = {node[2 * i + 0] - 1, node[2 * i + 1] - 1};
+    if (!connectedNodes[map[0]] || !connectedNodes[map[1]]) {
       edgeRenumber[i] = -2147483648;
       continue;
     }
-    for (int j = 0; j < theEdges->nLocalNode; j++){
+    for (int j = 0; j < theEdges->nLocalNode; j++) {
       connectedEdges[i] = 1;
       theEdges->elem[2 * countEdges + j] = nodeRenumber[map[j]];
     }
@@ -199,7 +199,6 @@ void geoMeshImport(void) {
   gmshFree(node);
   gmshFree(elem);
   printf("Geo     : Importing %d edges \n", theEdges->nElem);
-
 
   /* Importing 1D entities */
   int *dimTags;
@@ -218,17 +217,15 @@ void geoMeshImport(void) {
     sprintf(theDomain->name, "Entity %d ", tag - 1);
 
     int *elementType;
-    size_t nElementType, **elementTags, *nElementTags, nnElementTags,
-        **nodesTags, *nNodesTags, nnNodesTags;
-    gmshModelMeshGetElements(&elementType, &nElementType, &elementTags,
-                             &nElementTags, &nnElementTags, &nodesTags,
-                             &nNodesTags, &nnNodesTags, dim, tag, &ierr);
+    size_t nElementType, **elementTags, *nElementTags, nnElementTags, **nodesTags, *nNodesTags, nnNodesTags;
+    gmshModelMeshGetElements(&elementType, &nElementType, &elementTags, &nElementTags, &nnElementTags, &nodesTags, &nNodesTags, &nnNodesTags, dim, tag, &ierr);
     theDomain->nElem = nElementTags[0];
     theDomain->elem = malloc(sizeof(int) * 2 * theDomain->nElem);
     int nElemCount = 0;
     for (int j = 0; j < theDomain->nElem; j++) {
       int mapEdge = edgeRenumber[elementTags[0][j] - shiftEdges];
-      if(mapEdge < 0) continue;
+      if (mapEdge < 0)
+        continue;
       theDomain->elem[nElemCount] = mapEdge;
       nElemCount++;
     }
@@ -253,7 +250,7 @@ void geoMeshImport(void) {
     if (theGeometry.theDomains[i]->nElem != 0) {
       theGeometry.theDomains[countDomains] = theGeometry.theDomains[i];
       countDomains++;
-    } else{
+    } else {
       free(theGeometry.theDomains[i]->elem);
       free(theGeometry.theDomains[i]);
       theGeometry.theDomains[i] = NULL;
@@ -316,7 +313,10 @@ void geoMeshPrint(void) {
 
 void geoMeshWrite(const char *filename) {
   FILE *file = fopen(filename, "w");
-  if(!file) {printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename); exit(-1);}
+  if (!file) {
+    printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename);
+    exit(-1);
+  }
 
   femNodes *theNodes = theGeometry.theNodes;
   fprintf(file, "Number of nodes %d \n", theNodes->nNodes);
@@ -367,7 +367,10 @@ void geoMeshWrite(const char *filename) {
 
 void geoMeshRead(const char *filename) {
   FILE *file = fopen(filename, "r");
-  if(!file) {printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename); exit(-1);}
+  if (!file) {
+    printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename);
+    exit(-1);
+  }
 
   int trash, *elem;
 
@@ -460,6 +463,8 @@ static const double _gaussQuad4Weight[4] = {1.000000000000000, 1.000000000000000
 static const double _gaussTri3Xsi[3] = {0.166666666666667, 0.666666666666667, 0.166666666666667};
 static const double _gaussTri3Eta[3] = {0.166666666666667, 0.166666666666667, 0.666666666666667};
 static const double _gaussTri3Weight[3] = {0.166666666666667, 0.166666666666667, 0.166666666666667};
+static const double _gaussEdge2Xsi[2] = {0.577350269189626, -0.577350269189626};
+static const double _gaussEdge2Weight[2] = {1.000000000000000, 1.000000000000000};
 
 femIntegration *femIntegrationCreate(int n, femElementType type) {
   femIntegration *theRule = malloc(sizeof(femIntegration));
@@ -473,6 +478,11 @@ femIntegration *femIntegrationCreate(int n, femElementType type) {
     theRule->xsi = _gaussTri3Xsi;
     theRule->eta = _gaussTri3Eta;
     theRule->weight = _gaussTri3Weight;
+  } else if (type == FEM_EDGE && n == 2) {
+    theRule->n = 2;
+    theRule->xsi = _gaussEdge2Xsi;
+    theRule->eta = NULL;
+    theRule->weight = _gaussEdge2Weight;
   } else
     Error("Cannot create such an integration rule !");
   return theRule;
@@ -533,6 +543,21 @@ void _p1c0_dphidx(double xsi, double eta, double *dphidxsi, double *dphideta) {
   dphideta[2] = 1.0;
 }
 
+void _e1c0_x(double *xsi) {
+  xsi[0] = -1.0;
+  xsi[1] = 1.0;
+}
+
+void _e1c0_phi(double xsi, double *phi) {
+  phi[0] = (1 - xsi) / 2.0;
+  phi[1] = (1 + xsi) / 2.0;
+}
+
+void _e1c0_dphidx(double xsi, double *dphidxsi) {
+  dphidxsi[0] = -0.5;
+  dphidxsi[1] = 0.5;
+}
+
 femDiscrete *femDiscreteCreate(int n, femElementType type) {
   femDiscrete *theSpace = malloc(sizeof(femDiscrete));
   if (type == FEM_QUAD && n == 4) {
@@ -545,12 +570,21 @@ femDiscrete *femDiscreteCreate(int n, femElementType type) {
     theSpace->x2 = _p1c0_x;
     theSpace->phi2 = _p1c0_phi;
     theSpace->dphi2dx = _p1c0_dphidx;
+  } else if (type == FEM_EDGE && n == 2) {
+    theSpace->n = 2;
+    theSpace->x = _e1c0_x;
+    theSpace->phi = _e1c0_phi;
+    theSpace->dphidx = _e1c0_dphidx;
   } else
     Error("Cannot create such a discrete space !");
   return theSpace;
 }
 
 void femDiscreteFree(femDiscrete *theSpace) { free(theSpace); }
+
+void femDiscreteXsi(femDiscrete *mySpace, double *xsi) { mySpace->x(xsi); }
+
+void femDiscretePhi(femDiscrete *mySpace, double xsi, double *phi) { mySpace->phi(xsi, phi); }
 
 void femDiscreteXsi2(femDiscrete *mySpace, double *xsi, double *eta) { mySpace->x2(xsi, eta); }
 
@@ -709,7 +743,7 @@ femProblem *femElasticityCreate(femGeo *theGeometry, double E, double nu, double
   int nNodes = theGeometry->theNodes->nNodes;
   int size = 2 * nNodes;
   theProblem->constrainedNodes = malloc(nNodes * sizeof(femConstrainedNode));
-  for(int i = 0; i < nNodes; i++){
+  for (int i = 0; i < nNodes; i++) {
     theProblem->constrainedNodes[i].type = UNDEFINED;
     theProblem->constrainedNodes[i].nx = NAN;
     theProblem->constrainedNodes[i].ny = NAN;
@@ -726,16 +760,17 @@ femProblem *femElasticityCreate(femGeo *theGeometry, double E, double nu, double
     theProblem->space = femDiscreteCreate(4, FEM_QUAD);
     theProblem->rule = femIntegrationCreate(4, FEM_QUAD);
   }
+  theProblem->spaceEdge = femDiscreteCreate(2, FEM_EDGE);
+  theProblem->ruleEdge = femIntegrationCreate(2, FEM_EDGE);
   theProblem->system = femFullSystemCreate(size);
   return theProblem;
 }
-
 
 void femElasticityFree(femProblem *theProblem) {
   femFullSystemFree(theProblem->system);
   femIntegrationFree(theProblem->rule);
   femDiscreteFree(theProblem->space);
-  for(int i = 0; i < theProblem->nBoundaryConditions; i++)
+  for (int i = 0; i < theProblem->nBoundaryConditions; i++)
     free(theProblem->conditions[i]);
   free(theProblem->conditions);
   free(theProblem->soluce);
@@ -761,23 +796,24 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
   theProblem->nBoundaryConditions++;
   int nBoundaryConditions = theProblem->nBoundaryConditions;
 
-  if (theProblem->conditions == NULL){
+  if (theProblem->conditions == NULL) {
     theProblem->conditions = malloc(nBoundaryConditions * sizeof(femBoundaryCondition *));
   }
 
   femNodes *theNodes = theProblem->geometry->theNodes;
-  if (type == DIRICHLET_X || type == DIRICHLET_Y || type == DIRICHLET_XY || type == DIRICHLET_N || type == DIRICHLET_T || type == DIRICHLET_NT){
+  if (type == DIRICHLET_X || type == DIRICHLET_Y || type == DIRICHLET_XY || type == DIRICHLET_N || type == DIRICHLET_T || type == DIRICHLET_NT) {
     // Ensure that there is only one Dirichlet boundary condition per domain
-    for(int i = 0; i < nBoundaryConditions - 1; i++){
-      if (theProblem->conditions[i]->domain != theBoundary->domain) continue;
+    for (int i = 0; i < nBoundaryConditions - 1; i++) {
+      if (theProblem->conditions[i]->domain != theBoundary->domain)
+        continue;
       femBoundaryType type_i = theProblem->conditions[i]->type;
-      if(type_i == DIRICHLET_X || type_i == DIRICHLET_Y || type_i == DIRICHLET_XY || type_i == DIRICHLET_N || type_i == DIRICHLET_T || type_i == DIRICHLET_NT){
+      if (type_i == DIRICHLET_X || type_i == DIRICHLET_Y || type_i == DIRICHLET_XY || type_i == DIRICHLET_N || type_i == DIRICHLET_T || type_i == DIRICHLET_NT) {
         printf("\nTrying to set a second Dirichlet boundary condition on domain \"%s\"", nameDomain);
         Error("Only one Dirichlet boundary condition is allowed per domain");
       }
     }
 
-    femDomain* theDomain = theProblem->geometry->theDomains[iDomain];
+    femDomain *theDomain = theProblem->geometry->theDomains[iDomain];
     int *elem = theDomain->elem;
     int nElem = theDomain->nElem;
     femConstrainedNode constrainedNode;
@@ -786,18 +822,17 @@ void femElasticityAddBoundaryCondition(femProblem *theProblem, char *nameDomain,
     constrainedNode.value2 = value2;
     constrainedNode.nx = NAN;
     constrainedNode.ny = NAN;
-    if (type == DIRICHLET_X || type == DIRICHLET_Y || type == DIRICHLET_XY){
+    if (type == DIRICHLET_X || type == DIRICHLET_Y || type == DIRICHLET_XY) {
       for (int iElem = 0; iElem < nElem; iElem++) {
         for (int i = 0; i < 2; i++) {
           int node = theDomain->mesh->elem[2 * elem[iElem] + i];
           theProblem->constrainedNodes[node] = constrainedNode;
         }
       }
-    }
-    else { // need to compute normals
+    } else { // need to compute normals
       int nNodes = theNodes->nNodes;
-      double* NX = malloc(nNodes * sizeof(double));
-      double* NY = malloc(nNodes * sizeof(double));
+      double *NX = malloc(nNodes * sizeof(double));
+      double *NY = malloc(nNodes * sizeof(double));
       for (int iElem = 0; iElem < nElem; iElem++) {
         int node0 = theDomain->mesh->elem[2 * elem[iElem] + 0];
         int node1 = theDomain->mesh->elem[2 * elem[iElem] + 1];
@@ -888,7 +923,10 @@ void femElasticityPrint(femProblem *theProblem) {
 
 void femElasticityWrite(femProblem *theProblem, const char *filename) {
   FILE *file = fopen(filename, "w");
-  if(!file) {printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename); exit(-1);}
+  if (!file) {
+    printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename);
+    exit(-1);
+  }
 
   switch (theProblem->planarStrainStress) {
   case PLANAR_STRESS:
@@ -958,7 +996,10 @@ void femElasticityWrite(femProblem *theProblem, const char *filename) {
 
 femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
   FILE *file = fopen(filename, "r");
-  if(!file) {printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename); exit(-1);}
+  if (!file) {
+    printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename);
+    exit(-1);
+  }
   femProblem *theProblem = malloc(sizeof(femProblem));
   theProblem->nBoundaryConditions = 0;
   theProblem->conditions = NULL;
@@ -973,7 +1014,7 @@ femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
   }
 
   theProblem->constrainedNodes = malloc(nNodes * sizeof(femConstrainedNode));
-  for(int i = 0; i < nNodes; i++){
+  for (int i = 0; i < nNodes; i++) {
     theProblem->constrainedNodes[i].type = UNDEFINED;
     theProblem->constrainedNodes[i].nx = NAN;
     theProblem->constrainedNodes[i].ny = NAN;
@@ -990,6 +1031,8 @@ femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
     theProblem->space = femDiscreteCreate(4, FEM_QUAD);
     theProblem->rule = femIntegrationCreate(4, FEM_QUAD);
   }
+  theProblem->spaceEdge = femDiscreteCreate(2, FEM_EDGE);
+  theProblem->ruleEdge = femIntegrationCreate(2, FEM_EDGE);
   theProblem->system = femFullSystemCreate(size);
 
   char theLine[MAXNAME];
@@ -1071,13 +1114,16 @@ femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
 
 void femSolutionWrite(int nNodes, int nfields, double *data, const char *filename) {
   FILE *file = fopen(filename, "w");
-  if(!file) {printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename); exit(-1);}
+  if (!file) {
+    printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename);
+    exit(-1);
+  }
   fprintf(file, "Size %d,%d\n", nNodes, nfields);
   for (int i = 0; i < nNodes; i++) {
-    for (int j = 0; j < nfields-1; j++){
+    for (int j = 0; j < nfields - 1; j++) {
       fprintf(file, "%.18le,", data[i * nfields + j]);
     }
-    fprintf(file, "%.18le", data[i * nfields + nfields-1]);
+    fprintf(file, "%.18le", data[i * nfields + nfields - 1]);
     fprintf(file, "\n");
   }
   fclose(file);
@@ -1085,10 +1131,13 @@ void femSolutionWrite(int nNodes, int nfields, double *data, const char *filenam
 
 int femSolutiondRead(int allocated_size, double *value, const char *filename) {
   FILE *file = fopen(filename, "r");
-  if(!file) {printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename); exit(-1);}
-  int nNodes,nFields;
+  if (!file) {
+    printf("Error at %s:%d\nUnable to open file %s\n", __FILE__, __LINE__, filename);
+    exit(-1);
+  }
+  int nNodes, nFields;
   ErrorScan(fscanf(file, "Size %d,%d\n", &nNodes, &nFields));
-  if(nNodes * nFields > allocated_size){
+  if (nNodes * nFields > allocated_size) {
     printf("Error: allocated size is %d, but the solution file has %d nodes and %d fields", allocated_size, nNodes, nFields);
     Error("The allocated size is too small for femSolutiondRead");
   }
