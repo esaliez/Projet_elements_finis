@@ -1,8 +1,8 @@
 Faire le projet:
 V-créer la forme 
 V-créer le maillage progressif et fin aux endroits les plus contraints
--créer la force hydrostatique 
--faire un solveur efficace (solveur )
+-créer la force hydrostatique (->discrete ?)
+-faire un solveur efficace (solveur)
 -calculer les efforts internes
 -calculer les deplacements 
 -enlever de la matiere en itérant
@@ -23,4 +23,19 @@ QUESTIONS ASSISTANT:
 -comment implémenter la pression hydrostatique ?
 -est ce que je dois diviser le coté gauche en une multitude de sous domaines ?
 -comment mettre les conditions frontieres sur la figure maillage ?
--
+-c'est quoi UV ?, d'où il sort ?
+-qu'est ce que on doit modifier concretement dans project ?
+-Comment peut on itérer pour supprimer de la matiere -> lier les post,pre,project pour enlever de la matiere 
+aux bons endroits
+-neumann_x ou neumann_n sur les cotés pas droits
+-refaire rapport ?
+
+
+
+
+
+
+
+
+
+
