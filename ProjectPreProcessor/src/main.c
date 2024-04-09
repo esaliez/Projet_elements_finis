@@ -60,7 +60,7 @@ int main(void) {
   femElasticityAddBoundaryCondition(theProblem, "sol", DIRICHLET_XY, 0.0, 0.0);
   femElasticityAddBoundaryCondition(theProblem, "droit_bas", NEUMANN_X, 0.0, NAN);
   femElasticityAddBoundaryCondition(theProblem, "droit_haut", NEUMANN_X, 0.0, NAN );
-  femElasticityAddBoundaryCondition(theProblem, "sommet", NEUMANN_X, 0.0, NAN);
+  femElasticityAddBoundaryCondition(theProblem, "sommet", NEUMANN_Y, 0.0, NAN);
   femElasticityAddBoundaryCondition(theProblem, "gauche", NEUMANN_HYDROSTAT, -rho*gy, NAN);
   femElasticityPrint(theProblem);
   femElasticityWrite(theProblem, "../data/problem.txt");
