@@ -35,11 +35,26 @@ aux bons endroits
 
 solveur band renumérotation => reverse cuthill mckee algo   rapide
 
-axisymétrique: modifier assemble, assemble neumann, avec  un falg if axisymetrique , change pas le solveur, (opérateur laplacien)
+axisymétrique: modifier assemble, assemble neumann, avec un falg if axisymetrique , change pas le solveur, (opérateur laplacien)
 -
 
+############################ Mise au propre réunion Michel 9/4 #########################################"
 
 
+pour la pression hydrostatique, il faut:
+-Dans pre: modifier le fem.c (3 endroits) et le fem.h (1) et imposer la conditions dans main.c avec comme value1 = -rho*g
+-Dans project: modifier le fem.c et fem.h et dans le code assembleNeumann, ajouter la pression hydrostatique dans les type et dans les if, pour faire en sorte que f_x = value*y
+-Dans pro: ptt l'ajouter aussi 
+
+UV ce sont les positions, matrice des positions
+
+PAS itérer pour enlever de la matière pour l'instant, sinon il faut modifier l'intérieur du code pour lier pre/project/post
+
+On est pas obligé d'imposer les conditions de Neumann = 0 car s'il n'y a pas de condition c'est ce que le code fera. Mais il faut en parler dans le projet donc c'est mieux d'etre explicite
+
+Le meilleur solveur 2D à utiliser pour renuméroter le solveur band est le Reverse Cuthill Mckee Algorithm -> rapide 
+
+pour l'axisymétrie, il faut mettre une condition if (type) = axisymétric alors on rendre dans une partie avec du r, il faut fair eça dans assemble et neumannAssemble
 
 
 

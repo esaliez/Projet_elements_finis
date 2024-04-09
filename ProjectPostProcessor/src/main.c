@@ -22,12 +22,12 @@ int main(void) {
   //
 
   femGeo *theGeometry = geoGetGeometry();
-  geoMeshRead("../data/mesh.txt");
+  geoMeshRead("../../ProjectPreProcessor/data/mesh.txt");
 
-  femProblem *theProblem = femElasticityRead(theGeometry, "../data/problem.txt");
+  femProblem *theProblem = femElasticityRead(theGeometry, "../../ProjectPreProcessor/data/problem.txt");
   double *theSoluce = theProblem->soluce;
   int n = theGeometry->theNodes->nNodes;
-  femSolutiondRead(2*n,theSoluce, "../data/UV.txt");
+  femSolutiondRead(2*n,theSoluce, "../../Project/data/UV.txt");
   femElasticityPrint(theProblem);
 
   //
@@ -36,7 +36,10 @@ int main(void) {
   //
 
   femNodes *theNodes = theGeometry->theNodes;
-  double deformationFactor = 1e5;
+  
+  // A changer
+  //double deformationFactor = 1e5; //init
+  double deformationFactor = 1e2;
   double *normDisplacement = malloc(theNodes->nNodes * sizeof(double));
 
   for (int i = 0; i < n; i++) {

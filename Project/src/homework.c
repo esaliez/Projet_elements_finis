@@ -25,6 +25,7 @@ void femElasticityAssembleElements(femProblem *theProblem) {
   double gy = theProblem->gy;
   double **A = theSystem->A;
   double *B = theSystem->B;
+  
 
   for (iElem = 0; iElem < theMesh->nElem; iElem++) {
     for (j = 0; j < nLocal; j++) {
@@ -46,9 +47,10 @@ void femElasticityAssembleElements(femProblem *theProblem) {
       double dxdeta = 0.0;
       double dydxsi = 0.0;
       double dydeta = 0.0;
+      double r = 0.0;
       for (i = 0; i < theSpace->n; i++) {
-        dxdxsi += x[i] * dphidxsi[i];
-        dxdeta += x[i] * dphideta[i];
+        dxdxsi += x[i] * dphidxsi[i];   // dxdxsi,dxdeta,dydxsi,dydeta: dérivées spatiales de x et y
+        dxdeta += x[i] * dphideta[i];   // dphidxsi, dphideta, dphidxsi, dphideta : dérivées des fonctions de forme
         dydxsi += y[i] * dphidxsi[i];
         dydeta += y[i] * dphideta[i];
       }
@@ -77,6 +79,11 @@ void femElasticityAssembleElements(femProblem *theProblem) {
   }
 }
 
+
+
+
+
+
 void femElasticityAssembleNeumann(femProblem *theProblem) {
   femFullSystem *theSystem = theProblem->system;
   femIntegration *theRule = theProblem->ruleEdge;
@@ -94,17 +101,52 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
     femBoundaryType type = theCondition->type;
     double value = theCondition->value1;
 
-    if(type != NEUMANN_X && type != NEUMANN_Y && type != NEUMANN_N && type != NEUMANN_T){
+    if(type != NEUMANN_X && type != NEUMANN_Y && type != NEUMANN_N && type != NEUMANN_T && type != NEUMANN_HYDROSTAT){
       continue;
     }
+//////// Le but ici est de connaitre la hauteur totale de la stucture. 
+//////// On va parcourir les positions 'y' des noeuds pour avoir la positions min et max.
 
+    int iEl;//utiliser d'autres variables pour ne pas ecraser les variables de boucle
+    int hauteur;// calcule de la hauteur du domaine en question
+    int y_max = -1;//
+    int y_min = -1;//
+    int y_moy;//distance au centre d'une arete depuis l'origine
+    int POS; // position correcte avec 0 au dessus du barrage, donc négative. Correspond à y dans rho*g*y
+    int number_elem = theCondition->domain->nElem;
+    for (int iEd = 0; iEd < theCondition->domain->nElem; iEd++) {
+      iEl = theCondition->domain->elem[iEd];
+      for (int k = 0; k < nLocal; k++) {
+        map[k] = theEdges->elem[iEl * nLocal + k];
+        y[k] = theNodes->Y[map[k]];
+        if(y_max == -1 && y_min == -1){
+          y_max = y[k];
+          y_min = y[k];
+        }
+        if(y[k] > y_max){
+          y_max = y[k];
+        }
+        if(y[k] < y_min){
+          y_min = y[k];
+        }
+      }
+    }
+
+    hauteur = y_max - y_min;//
+////////////////////////////////////////////
+////// Maintenant on applique la condition de Neumann sur chaque morceaux de chaque domaine 
+    
     for (iEdge = 0; iEdge < theCondition->domain->nElem; iEdge++) {
       iElem = theCondition->domain->elem[iEdge];
       for (j = 0; j < nLocal; j++) {
         map[j] = theEdges->elem[iElem * nLocal + j];
         x[j] = theNodes->X[map[j]];
         y[j] = theNodes->Y[map[j]];
+        
       }
+       
+      int y_moy = (y[0]+y[1])/2; //
+      POS = y_moy - hauteur;//
 
       double tx = x[1] - x[0];
       double ty = y[1] - y[0];
@@ -129,6 +171,13 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
         f_x = value * tx/length;
         f_y = value * ty/length;
       }
+      ///////
+      if (type == NEUMANN_HYDROSTAT){
+        f_x = value * POS;//
+      }
+      ///////
+
+
       //
       // A completer :-)
       // Attention, pour le normal tangent on calcule la normale (sortante) au SEGMENT, surtout PAS celle de constrainedNodes
@@ -220,3 +269,122 @@ double *femElasticitySolve(femProblem *theProblem) {
   memcpy(theProblem->soluce, soluce, theProblem->system->size * sizeof(double));
   return theProblem->soluce;
 }
+
+
+
+void RenumberCuthill(femGeo *theGeometry) {
+  int i;
+  int *tab = malloc(sizeof(int) * theMesh->nodes->nNodes);
+
+//avoir une liste avec les noeuds et leurs degres
+femMesh *mesh = theGeometry->theElements;
+int *elem_list = mesh->elem;
+
+int list_size = mesh->nElem*mesh->nLocalNode*2
+int *list = malloc(sizeof(int) * list_size);
+
+
+  //étape 1 : créer tous les éléments i-j et j-i
+for (int i = 0; i < (mesh->nElem); i++) {
+  
+    list[12*i]=malloc(2*sizeof(int));
+    
+    //on suppose nLocalNode = 3 sinon trop compliqué
+    list[2*i*mesh->nLocalNode][0] = elem_list[i*mesh->nLocalNode];
+    list[2*i*mesh->nLocalNode][1] = elem_list[i*mesh->nLocalNode+1];
+    list[2*i*mesh->nLocalNode+1][0] = elem_list[i*mesh->nLocalNode];
+    list[2*i*mesh->nLocalNode+1][1] = elem_list[i*mesh->nLocalNode+2];
+    list[2*i*mesh->nLocalNode+2][0] = elem_list[i*mesh->nLocalNode+1];
+    list[2*i*mesh->nLocalNode+2][1] = elem_list[i*mesh->nLocalNode];
+    list[2*i*mesh->nLocalNode+3][0] = elem_list[i*mesh->nLocalNode+1];
+    list[2*i*mesh->nLocalNode+3][1] = elem_list[i*mesh->nLocalNode+2];
+    list[2*i*mesh->nLocalNode+4][0] = elem_list[i*mesh->nLocalNode+2];
+    list[2*i*mesh->nLocalNode+4][1] = elem_list[i*mesh->nLocalNode];
+    list[2*i*mesh->nLocalNode+5][0] = elem_list[i*mesh->nLocalNode+2];
+    list[2*i*mesh->nLocalNode+5][1] = elem_list[i*mesh->nLocalNode+1];
+  }
+  //etape 2 : trier la liste 
+
+  int compare(int *a, int *b) {
+
+    if(a[0] == b[0])
+      return (a[1] - b[1]);
+
+    return (a[0] - b[0]);
+  }
+
+  qsort(list, list_size, sizeof(int*), compare)
+
+  //etape 3 : supprimer les doublons   => bien faux mais hassoul
+
+    int* new_list = malloc(n * sizeof(int*));
+    int size = 0;
+    new_list[j++] = list[0];
+    for (int i = 1; i < list_size; i++) {
+        if (list[i] != list[i - 1]) {
+            new_list[size++] = list[i];
+        }
+    }
+    
+
+  //etape 4 : créer les vecteurs col et rptr 
+
+  int *col = malloc(sizeof(int) * new_size); //new_size à instancier
+  int *rptr = malloc(sizeof(int) * (theGeometry->theNodes->nNodes+1));
+  rptr[0]=0;
+
+
+  int num_col = 0;
+  int num = 0;
+  int noeud_actuel = list[0][0];
+
+  for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+    
+    while(list[num][0] == noeud_actuel){
+      
+      col[num_col++] = list[num++][1];}
+    
+    rptr[i] = num_col;
+    noeud_actuel = list[num][0];
+    
+
+
+  }
+
+
+  
+
+
+
+
+
+
+//Instantiate an empty queue Q and empty array for permutation order of the objects R.
+  int q = malloc(sizeof(int) todo);
+  int r = malloc(sizeof(int) todo);
+  int next_empty_q = 0;
+  int next_empty_r = 0;
+  int not_visited = malloc(sizeof(int) todo);
+
+//S1: We first find the object with minimum degree whose index has not yet been added to R. 
+//    Say, object corresponding to pth row has been identified as the object with a minimum degree. Add p to R.
+
+  int min_index = todo;
+  r[next_empty_r] = min_index;
+  next_empty_r++;
+
+
+//S2: As an index is added to R, and add all neighbors of the corresponding object at the index, 
+//    in increasing order of degree, to Q. The neighbors are nodes with non-zero value amongst the 
+//    non-diagonal elements in the pth row.
+
+//S3: Extract the first node in Q, say C. If C has not been inserted in R, add it to R, add to Q the neighbors 
+//    of C in increasing order of degree.
+//S4: If Q is not empty, repeat S3.
+//S5: If Q is empty, but there are objects in the matrix which have not been included in R, start from S1, once again. (This could happen if there are disjoint graphs)
+//S6: Terminate this algorithm once all objects are included in R.
+//S7: Finally, reverse the indices in R, i.e. (swap(R[i], R[P-i+1])).
+  
+  
+  
+ }

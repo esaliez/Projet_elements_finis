@@ -14,8 +14,8 @@
 
 int main(void) {
   femGeo *theGeometry = geoGetGeometry();
-  geoMeshRead("../data/mesh.txt");
-  femProblem *theProblem = femElasticityRead(theGeometry, "../data/problem.txt");
+  geoMeshRead("../../ProjectPreProcessor/data/mesh.txt");
+  femProblem *theProblem = femElasticityRead(theGeometry, "../../ProjectPreProcessor/data/problem.txt");
   femElasticityPrint(theProblem);
   double *theSoluce = femElasticitySolve(theProblem);
   int nNodes = theGeometry->theNodes->nNodes;

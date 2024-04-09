@@ -52,6 +52,7 @@ int main(void) {
   double E = 30.e9;//module de young -> 20 à 40 GPa: E_moy = 30*10e9 Pa
   double nu = 0.2;//coeff de poisson
   double rho = 2350;//masse volumique -> 2200 à 2500 [kg/m3] : rho_moy = 2350 [kg/m3]
+  double rho_eau = 1000;//masse volumique de l'eau [kg/m3]
   double gx = 0;
   double gy = -9.81;
 
@@ -61,7 +62,7 @@ int main(void) {
   femElasticityAddBoundaryCondition(theProblem, "droit_bas", NEUMANN_X, 0.0, NAN);
   femElasticityAddBoundaryCondition(theProblem, "droit_haut", NEUMANN_X, 0.0, NAN );
   femElasticityAddBoundaryCondition(theProblem, "sommet", NEUMANN_Y, 0.0, NAN);
-  femElasticityAddBoundaryCondition(theProblem, "gauche", NEUMANN_HYDROSTAT, -rho*gy, NAN);
+  femElasticityAddBoundaryCondition(theProblem, "gauche", NEUMANN_HYDROSTAT, rho_eau*gy, NAN);
   femElasticityPrint(theProblem);
   femElasticityWrite(theProblem, "../data/problem.txt");
 

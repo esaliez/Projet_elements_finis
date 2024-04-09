@@ -694,6 +694,9 @@ void femElasticityPrint(femProblem *theProblem) {
       printf(" imposing %9.2e as the normal force  \n", value1);
     if (theCondition->type == NEUMANN_T)
       printf(" imposing %9.2e as the tangential force  \n", value1);
+    
+    if (theCondition->type == NEUMANN_HYDROSTAT)
+      printf(" imposing %9.2e as the hydrostatic pressure  \n", value1);
   }
   printf(" ======================================================================================= \n\n");
 }
@@ -760,6 +763,9 @@ void femElasticityWrite(femProblem *theProblem, const char *filename) {
       break;
     case NEUMANN_T:
       fprintf(file, " Neumann-T          = %14.7e, %14.7e ", value1, NAN);
+      break;
+    case NEUMANN_HYDROSTAT:
+      fprintf(file, " Neumann-Hydrostat  = %14.7e, %14.7e ", value1, NAN);
       break;
     default:
       fprintf(file, " Undefined          = %14.7e, %14.7e ", NAN, NAN);
@@ -866,6 +872,8 @@ femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
         typeCondition = NEUMANN_N;
       if (strncasecmp(theArgument, "Neumann-T", 19) == 0)
         typeCondition = NEUMANN_T;
+      if (strncasecmp(theArgument, "Neumann-Hydrostat", 19) == 0)
+        typeCondition = NEUMANN_HYDROSTAT;
       femElasticityAddBoundaryCondition(theProblem, theDomain, typeCondition, value1, value2);
     }
     ErrorScan(fscanf(file, "\n"));

@@ -1096,6 +1096,9 @@ femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
         typeCondition = NEUMANN_T;
       if(strncasecmp(theArgument,"Neumann-Hydrostat", 19) == 0)
         typeCondition = NEUMANN_HYDROSTAT;
+
+
+    
       femElasticityAddBoundaryCondition(theProblem, theDomain, typeCondition, value1, value2);
     }
     ErrorScan(fscanf(file, "\n"));
