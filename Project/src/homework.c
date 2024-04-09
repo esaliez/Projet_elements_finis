@@ -119,7 +119,16 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
       if (type == NEUMANN_Y) {
         f_y = value;
       }
-
+      if (type == NEUMANN_N) {
+        double nx =  ty / length;
+        double ny = -tx / length;
+        f_x = value * nx;
+        f_y = value * ny;
+      }
+      if (type == NEUMANN_T) {
+        f_x = value * tx/length;
+        f_y = value * ty/length;
+      }
       //
       // A completer :-)
       // Attention, pour le normal tangent on calcule la normale (sortante) au SEGMENT, surtout PAS celle de constrainedNodes
@@ -171,12 +180,20 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       double nx = theConstrainedNode->nx;
       double ny = theConstrainedNode->ny;
       // A completer :-)
+      femFullSystemConstrain(theSystem, 2 * node + 0, value * nx);
+      femFullSystemConstrain(theSystem, 2 * node + 1, value * ny);
     }
     if (type == DIRICHLET_T) {
       double value = theConstrainedNode->value1;
       double nx = theConstrainedNode->nx;
       double ny = theConstrainedNode->ny;
+
+
       // A completer :-)
+      double tx = -ny*value;
+      double ty = nx*value;
+      femFullSystemConstrain(theSystem, 2 * node + 0, tx);
+      femFullSystemConstrain(theSystem, 2 * node + 1, ty);
     }
     if (type == DIRICHLET_NT) {
       double value_n = theConstrainedNode->value1;
@@ -184,6 +201,12 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       double nx = theConstrainedNode->nx;
       double ny = theConstrainedNode->ny;
       // A completer :-)
+      double tx = -ny;
+      double ty = nx;
+      femFullSystemConstrain(theSystem, 2 * node + 0, value_n * nx + value_t * tx); 
+      femFullSystemConstrain(theSystem, 2 * node + 1, value_n * ny + value_t * ty);
+
+
     }
   }
 }
