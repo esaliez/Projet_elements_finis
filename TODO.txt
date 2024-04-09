@@ -20,16 +20,23 @@ garder l'explication des différents barrages en faisant nos propres figures !!
 
 QUESTIONS ASSISTANT:
 
--comment implémenter la pression hydrostatique ?
+-comment implémenter la pression hydrostatique ? -> project dependance en y, fem.c project a modifier, et dans post
 -est ce que je dois diviser le coté gauche en une multitude de sous domaines ?
 -comment mettre les conditions frontieres sur la figure maillage ?
 -c'est quoi UV ?, d'où il sort ?
--qu'est ce que on doit modifier concretement dans project ?
+-qu'est ce que on doit modifier concretement dans project ? 
 -Comment peut on itérer pour supprimer de la matiere -> lier les post,pre,project pour enlever de la matiere 
 aux bons endroits
--neumann_x ou neumann_n sur les cotés pas droits
+-neumann_x ou neumann_n sur les cotés pas droits => on mets rien dans le code quand homogène(=zéro) mais on mets dans le rapport (il parle de sigma)
 -refaire rapport ?
+-c'est quoi nx et ny, c'est quoi tn ?
+-quand tout est ouvert comment on sait lequel est run ?
 
+
+solveur band renumérotation => reverse cuthill mckee algo   rapide
+
+axisymétrique: modifier assemble, assemble neumann, avec  un falg if axisymetrique , change pas le solveur, (opérateur laplacien)
+-
 
 
 
