@@ -1,5 +1,7 @@
-
- #include "fem.h"
+#include "fem.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 // Il faut un fifrelin generaliser ce code.....
 //  (1) Ajouter l'axisymétrique !    (mandatory)
@@ -272,22 +274,22 @@ double *femElasticitySolve(femProblem *theProblem) {
 
 
 
-void RenumberCuthill(femGeo *theGeometry) {
-  int i;
-  int *tab = malloc(sizeof(int) * theMesh->nodes->nNodes);
-
+int* RenumberCuthill(femGeo *theGeometry) {
 //avoir une liste avec les noeuds et leurs degres
 femMesh *mesh = theGeometry->theElements;
 int *elem_list = mesh->elem;
 
-int list_size = mesh->nElem*mesh->nLocalNode*2
-int *list = malloc(sizeof(int) * list_size);
+int list_size = mesh->nElem*mesh->nLocalNode*2;
+int **list = malloc(sizeof(int*) * list_size);
+
+for (int i = 0; i < list_size; i++) {
+    list[i] = malloc(2*sizeof(int));
+  }
 
 
   //étape 1 : créer tous les éléments i-j et j-i
 for (int i = 0; i < (mesh->nElem); i++) {
   
-    list[12*i]=malloc(2*sizeof(int));
     
     //on suppose nLocalNode = 3 sinon trop compliqué
     list[2*i*mesh->nLocalNode][0] = elem_list[i*mesh->nLocalNode];
@@ -305,86 +307,157 @@ for (int i = 0; i < (mesh->nElem); i++) {
   }
   //etape 2 : trier la liste 
 
-  int compare(int *a, int *b) {
+  int compare(const void *a, const void *b){
 
-    if(a[0] == b[0])
-      return (a[1] - b[1]);
+    int *x = *(int**)a;
+    int *y = *(int**)b;
 
-    return (a[0] - b[0]);
+    if(x[0] == y[0])
+      return (x[1] - y[1]);
+    return (x[0] - y[0]);
   }
 
-  qsort(list, list_size, sizeof(int*), compare)
+  qsort(list, list_size, sizeof(int*), compare);
 
-  //etape 3 : supprimer les doublons   => bien faux mais hassoul
+  //etxpe 3 : supprimer les doublons   => bien faux mais hassoul
 
-    int* new_list = malloc(n * sizeof(int*));
-    int size = 0;
-    new_list[j++] = list[0];
+    int **list_whithout_duplicates = malloc(list_size * sizeof(int*));
+    for (int i = 0; i < list_size; i++) {
+        list_whithout_duplicates[i] = malloc(2*sizeof(int));
+      }
+
+    int size = 1;
+    list_whithout_duplicates[0] = list[0];
     for (int i = 1; i < list_size; i++) {
-        if (list[i] != list[i - 1]) {
-            new_list[size++] = list[i];
+        if (list[i][0] != list[i - 1][0] || list[i][1] != list[i - 1][1]) {
+            list_whithout_duplicates[size++] = list[i];
         }
     }
     
 
   //etape 4 : créer les vecteurs col et rptr 
 
-  int *col = malloc(sizeof(int) * new_size); //new_size à instancier
+  int *col = malloc(sizeof(int) * size); 
   int *rptr = malloc(sizeof(int) * (theGeometry->theNodes->nNodes+1));
+  int *degree = malloc(sizeof(int) * (theGeometry->theNodes->nNodes));
+
   rptr[0]=0;
 
 
   int num_col = 0;
   int num = 0;
-  int noeud_actuel = list[0][0];
+  int noeud_actuel = list_whithout_duplicates[0][0];
 
   for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
     
-    while(list[num][0] == noeud_actuel){
-      
-      col[num_col++] = list[num++][1];}
+    while(list_whithout_duplicates[num][0] == noeud_actuel){
+      degree[i]=0;
+      col[num_col++] = list_whithout_duplicates[num++][1];
+      degree[i]++;}
     
     rptr[i] = num_col;
-    noeud_actuel = list[num][0];
+    noeud_actuel = list_whithout_duplicates[num][0];
     
 
 
   }
 
 
-  
-
-
-
-
-
-
 //Instantiate an empty queue Q and empty array for permutation order of the objects R.
-  int q = malloc(sizeof(int) todo);
-  int r = malloc(sizeof(int) todo);
+  int *q = malloc(sizeof(int)*theGeometry->theNodes->nNodes*theGeometry->theNodes->nNodes);
+  int *r = malloc(sizeof(int)*theGeometry->theNodes->nNodes);
   int next_empty_q = 0;
+  int first_filled_q = 0;
   int next_empty_r = 0;
-  int not_visited = malloc(sizeof(int) todo);
+  bool *not_visited = malloc(sizeof(int)*theGeometry->theNodes->nNodes);
 
 //S1: We first find the object with minimum degree whose index has not yet been added to R. 
 //    Say, object corresponding to pth row has been identified as the object with a minimum degree. Add p to R.
 
-  int min_index = todo;
-  r[next_empty_r] = min_index;
-  next_empty_r++;
+  for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+    not_visited[i] = true;
+  }
+
+  int actual_degree = degree[0];
+  int minimum_node = 0;
+  bool change = true;
+
+    for (int i = 0; i< theGeometry->theNodes->nNodes; i++) {
+      if(degree[i] < actual_degree && not_visited[i]){
+        actual_degree = degree[i];
+        minimum_node = i;
+      }
+    }
+
+  while(change){
 
 
-//S2: As an index is added to R, and add all neighbors of the corresponding object at the index, 
-//    in increasing order of degree, to Q. The neighbors are nodes with non-zero value amongst the 
-//    non-diagonal elements in the pth row.
 
-//S3: Extract the first node in Q, say C. If C has not been inserted in R, add it to R, add to Q the neighbors 
-//    of C in increasing order of degree.
-//S4: If Q is not empty, repeat S3.
-//S5: If Q is empty, but there are objects in the matrix which have not been included in R, start from S1, once again. (This could happen if there are disjoint graphs)
-//S6: Terminate this algorithm once all objects are included in R.
-//S7: Finally, reverse the indices in R, i.e. (swap(R[i], R[P-i+1])).
+      r[next_empty_r++] = minimum_node;
+      not_visited[minimum_node] = false;
+
+
+    //S2: As an index is added to R, and add all neighbors of the corresponding object at the index, 
+    //    in increasing order of degree, to Q. The neighbors are nodes with non-zero value amongst the 
+    //    non-diagonal elements in the pth row.
+      
+        for (int i = rptr[minimum_node]; i < rptr[minimum_node+1]; i++) {
+          q[next_empty_q++] = col[i];
+        }
+
+        int compare2(const void *a, const void *b) {
+            int x = *(int*)a;
+            int y = *(int*)b;
+        return (degree[x] - degree[y]);
+      }
+
+        qsort(q, next_empty_q, sizeof(int), compare2);
+
+
+
+
+
+    //S3: Extract the first node in Q, say C. If C has not been inserted in R, add it to R, add to Q the neighbors 
+    //    of C in increasing order of degree.
+    //S4: If Q is not empty, repeat S3.
+
+        while(first_filled_q < next_empty_q){
+          int C = q[first_filled_q++];
+          if(not_visited[C]){
+            r[next_empty_r++] = C;
+            not_visited[C] = false;
+            int scission = next_empty_q;
+            for (int j = rptr[C]; j < rptr[C+1]; j++) {
+              q[next_empty_q++] = col[j];
+            }
+            qsort(&q[scission], next_empty_q-scission, sizeof(int), compare2);//il faut sort à partir de scission à mon avis ce que j'ai mis est faux 
+        }
+      
+    }
+    //S5: If Q is empty, but there are objects in the matrix which have not been included in R, start from S1, 
+    //    once again. (This could happen if there are disjoint graphs)
+    //S6: Terminate this algorithm once all objects are included in R.
+    change = false;
+    actual_degree = 10000;
+    for (int i = 0; i< theGeometry->theNodes->nNodes; i++) {
+    if(degree[i] < actual_degree && not_visited[i]){
+      actual_degree = degree[i];
+      minimum_node = i;
+      change = true;
+      }
+    }
+  }
+
+
+    //S7: Finally, reverse the indices in R, i.e. (swap(R[i], R[P-i+1])).
   
-  
+    int temp;
+    for (int i = 0; i < theGeometry->theNodes->nNodes / 2; i++) {
+        temp = r[i];
+        r[i] = r[theGeometry->theNodes->nNodes - i - 1];
+        r[theGeometry->theNodes->nNodes - i - 1] = temp;
+    }
+
+    return r;  
   
  }
