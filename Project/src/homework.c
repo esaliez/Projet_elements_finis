@@ -262,35 +262,27 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
   }
 }
 
-double *femElasticitySolve(femProblem *theProblem) {
-  femElasticityAssembleElements(theProblem);
-  femElasticityAssembleNeumann(theProblem);
-  femElasticityApplyDirichlet(theProblem);
 
-  double *soluce = femFullSystemEliminate(theProblem->system);
-  memcpy(theProblem->soluce, soluce, theProblem->system->size * sizeof(double));
-  return theProblem->soluce;
-}
 
 
 
 int* RenumberCuthill(femGeo *theGeometry) {
-//avoir une liste avec les noeuds et leurs degres
-femMesh *mesh = theGeometry->theElements;
-int *elem_list = mesh->elem;
+  //avoir une liste avec les noeuds et leurs degres
+  femMesh *mesh = theGeometry->theElements;
+  int *elem_list = mesh->elem;
 
-int list_size = mesh->nElem*mesh->nLocalNode*2;
-int **list = malloc(sizeof(int*) * list_size);
+  int list_size = mesh->nElem*mesh->nLocalNode*2;
+  int **list = malloc(sizeof(int*) * list_size);
 
-for (int i = 0; i < list_size; i++) {
-    list[i] = malloc(2*sizeof(int));
-  }
+  for (int i = 0; i < list_size; i++) {
+      list[i] = malloc(2*sizeof(int));
+    }
 
 
-  //étape 1 : créer tous les éléments i-j et j-i
-for (int i = 0; i < (mesh->nElem); i++) {
-  
+    //étape 1 : créer tous les éléments i-j et j-i
+  for (int i = 0; i < (mesh->nElem); i++) {
     
+      
     //on suppose nLocalNode = 3 sinon trop compliqué
     list[2*i*mesh->nLocalNode][0] = elem_list[i*mesh->nLocalNode];
     list[2*i*mesh->nLocalNode][1] = elem_list[i*mesh->nLocalNode+1];
@@ -405,7 +397,7 @@ for (int i = 0; i < (mesh->nElem); i++) {
           q[next_empty_q++] = col[i];
         }
 
-        int compare2(const void *a, const void *b) {
+        int compare2(const void *a, const void *b){
             int x = *(int*)a;
             int y = *(int*)b;
         return (degree[x] - degree[y]);
@@ -458,6 +450,38 @@ for (int i = 0; i < (mesh->nElem); i++) {
         r[theGeometry->theNodes->nNodes - i - 1] = temp;
     }
 
+
+    // section free (j'ai été un peu vite la dessus)   
+    for (int i = 0; i < list_size; i++) {
+        free(list[i]);
+    }
+
+    free(list);
+
+    for (int i = 0; i < list_size; i++) {
+        free(list_whithout_duplicates[i]);
+    }
+
+    free(list_whithout_duplicates);
+
+    free(col);
+    free(rptr);
+    free(degree);
+    free(q);
+    //free(r);
+    free(not_visited);
+
     return r;  
   
  }
+
+ double *femElasticitySolve(femProblem *theProblem) {
+  femElasticityAssembleElements(theProblem);
+  RenumberCuthill(theProblem->geometry);
+  femElasticityAssembleNeumann(theProblem);
+  femElasticityApplyDirichlet(theProblem);
+
+  double *soluce = femFullSystemEliminate(theProblem->system);
+  memcpy(theProblem->soluce, soluce, theProblem->system->size * sizeof(double));
+  return theProblem->soluce;
+}
