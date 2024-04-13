@@ -1,7 +1,7 @@
 Faire le projet:
 V-créer la forme 
 V-créer le maillage progressif et fin aux endroits les plus contraints
--créer la force hydrostatique (->discrete ?)
+V-créer la force hydrostatique (->discrete ?)
 -faire un solveur efficace (solveur)
 -calculer les efforts internes
 -calculer les deplacements 
@@ -11,32 +11,11 @@ V-créer le maillage progressif et fin aux endroits les plus contraints
 
 -PLANAR_STRAIN
 
--Dans le rapport, 
-garder l'explication des différents barrages en faisant nos propres figures !!
+
 -On bloque les déplacements dans la direction z donc on est en déformation plane ! ->> On suppose que la terre sur laquelle le barrage se repose l'empêche de se déformer, une  tension y est donc appliquée.
--écrire les conditions frontière directement sur la figure avec le maillage
--
 
+-axisymétrique: modifier assemble, assemble neumann, avec un flag if axisymetrique , change pas le solveur, (opérateur laplacien)
 
-QUESTIONS ASSISTANT:
-
--comment implémenter la pression hydrostatique ? -> project dependance en y, fem.c project a modifier, et dans post
--est ce que je dois diviser le coté gauche en une multitude de sous domaines ?
--comment mettre les conditions frontieres sur la figure maillage ?
--c'est quoi UV ?, d'où il sort ?
--qu'est ce que on doit modifier concretement dans project ? 
--Comment peut on itérer pour supprimer de la matiere -> lier les post,pre,project pour enlever de la matiere 
-aux bons endroits
--neumann_x ou neumann_n sur les cotés pas droits => on mets rien dans le code quand homogène(=zéro) mais on mets dans le rapport (il parle de sigma)
--refaire rapport ?
--c'est quoi nx et ny, c'est quoi tn ?
--quand tout est ouvert comment on sait lequel est run ?
-
-
-solveur band renumérotation => reverse cuthill mckee algo   rapide
-
-axisymétrique: modifier assemble, assemble neumann, avec un falg if axisymetrique , change pas le solveur, (opérateur laplacien)
--
 
 ############################ Mise au propre réunion Michel 9/4 #########################################"
 
@@ -46,7 +25,7 @@ pour la pression hydrostatique, il faut:
 -Dans project: modifier le fem.c et fem.h et dans le code assembleNeumann, ajouter la pression hydrostatique dans les type et dans les if, pour faire en sorte que f_x = value*y
 -Dans pro: ptt l'ajouter aussi 
 
-UV ce sont les positions, matrice des positions
+UV ce sont les positions, matrice des positions, déplacements
 
 PAS itérer pour enlever de la matière pour l'instant, sinon il faut modifier l'intérieur du code pour lier pre/project/post
 
@@ -58,6 +37,17 @@ pour l'axisymétrie, il faut mettre une condition if (type) = axisymétric alors
 
 
 
+##################### DANS LE RAPPORT FINAL: (selon marbre discord) ###################################
+
+Petite liste non-exhaustive de ce qui peut être mis dans le rapport final:
+SURTOUT PAS ce qui est déjà dans la description du projet
+Pas les math des éléments finis, on les connait
+Présentation des résultats, avec figures, quelle est la déformation, comment est-ce qu'on peut l'interpréter
+Choix du solveur si solveur spécial utilisé
+Analyse des performances du solveur quand on raffine le maillage (En plt.loglog
+Comment le code a été validé. (Exemple en comparant avec une solution analytique conne)
+Une analyse de convergence (Faire des maillages de plus en plus petits et montrer que l'erreur décroit comme attendu + montrer l'ordre de cette erreur)
+Si vous avez des conditions frontières bizzares, quelques mots sur leur implémentation
 
 
 
