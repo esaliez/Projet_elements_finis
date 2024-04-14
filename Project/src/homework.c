@@ -10,7 +10,8 @@
 //  (4) Et remplacer le solveur plein par un truc un fifrelin plus subtil  (mandatory)
 
 void femElasticityAssembleElements(femProblem *theProblem) {
-  femFullSystem *theSystem = theProblem->system;
+  femBandSystem *theSystem = theProblem->system;///ajou
+  //femFullSystem *theSystem = theProblem->system;
   femIntegration *theRule = theProblem->rule;
   femDiscrete *theSpace = theProblem->space;
   femGeo *theGeometry = theProblem->geometry;
@@ -55,7 +56,9 @@ void femElasticityAssembleElements(femProblem *theProblem) {
         dxdeta += x[i] * dphideta[i];   // dphidxsi, dphideta, dphidxsi, dphideta : dérivées des fonctions de forme
         dydxsi += y[i] * dphidxsi[i];
         dydeta += y[i] * dphideta[i];
+        r += x[i]*phi[i];
       }
+     
       double jac = dxdxsi * dydeta - dxdeta * dydxsi;
       if (jac < 0.0)
         printf("Negative jacobian! Your mesh is oriented in reverse. The normals will be wrong\n");
@@ -65,14 +68,28 @@ void femElasticityAssembleElements(femProblem *theProblem) {
         dphidx[i] = (dphidxsi[i] * dydeta - dphideta[i] * dydxsi) / jac;
         dphidy[i] = (dphideta[i] * dxdxsi - dphidxsi[i] * dxdeta) / jac;
       }
+      if (theProblem->planarStrainStress == AXISYM){
+        for (i = 0; i < theSpace->n; i++) {
+          for (j = 0; j < theSpace->n; j++) {
+            // on assemble la matrice de raideur qui sera symétrique donc que la partie triangulaire supérieure 
+            A[mapX[i]][mapX[j]] += (mapX[j] >= mapX[i]) ? (dphidx[i] * a * r * dphidx[j] + dphidy[i] * c * r * dphidy[j] + phi[i] * ((b * dphidx[j]) + (a * phi[j] / r)) + dphidx[i] * b * phi[j]) * jac * weight : 0.0;
+            A[mapX[i]][mapY[j]] += (mapY[j] >= mapX[i]) ? (dphidx[i] * b * r * dphidy[j] + dphidy[i] * c * r * dphidx[j] + phi[i] * b * dphidy[j]) * jac * weight : 0.0;
+            A[mapY[i]][mapX[j]] += (mapX[j] >= mapY[i]) ? (dphidy[i] * b * r * dphidx[j] + dphidx[i] * c * r * dphidy[j] + dphidy[i] * b * phi[j]) * jac * weight : 0.0;
+            A[mapY[i]][mapY[j]] += (mapY[j] >= mapY[i]) ? (dphidy[i] * a * r * dphidy[j] + dphidx[i] * c * r * dphidx[j]) * jac * weight : 0.0;
+          }
+        }
+      }else{
       for (i = 0; i < theSpace->n; i++) {
-        for (j = 0; j < theSpace->n; j++) {
-          A[mapX[i]][mapX[j]] += (dphidx[i] * a * dphidx[j] + dphidy[i] * c * dphidy[j]) * jac * weight;
-          A[mapX[i]][mapY[j]] += (dphidx[i] * b * dphidy[j] + dphidy[i] * c * dphidx[j]) * jac * weight;
-          A[mapY[i]][mapX[j]] += (dphidy[i] * b * dphidx[j] + dphidx[i] * c * dphidy[j]) * jac * weight;
-          A[mapY[i]][mapY[j]] += (dphidy[i] * a * dphidy[j] + dphidx[i] * c * dphidx[j]) * jac * weight;
+          for (j = 0; j < theSpace->n; j++) {
+            // on assemble la matrice de raideur qui sera symétrique donc que la partie triangulaire supérieure 
+            A[mapX[i]][mapX[j]] += (mapX[j] >= mapX[i]) ? (dphidx[i] * a * dphidx[j] + dphidy[i] * c * dphidy[j]) * jac * weight : 0.0;
+            A[mapX[i]][mapY[j]] += (mapY[j] >= mapX[i]) ? (dphidx[i] * b * dphidy[j] + dphidy[i] * c * dphidx[j]) * jac * weight : 0.0;
+            A[mapY[i]][mapX[j]] += (mapX[j] >= mapY[i]) ? (dphidy[i] * b * dphidx[j] + dphidx[i] * c * dphidy[j]) * jac * weight : 0.0;
+            A[mapY[i]][mapY[j]] += (mapY[j] >= mapY[i]) ? (dphidy[i] * a * dphidy[j] + dphidx[i] * c * dphidx[j]) * jac * weight : 0.0;
+          }
         }
       }
+      
       for (i = 0; i < theSpace->n; i++) {
         B[mapX[i]] += phi[i] * gx * rho * jac * weight;
         B[mapY[i]] += phi[i] * gy * rho * jac * weight;
@@ -87,7 +104,8 @@ void femElasticityAssembleElements(femProblem *theProblem) {
 
 
 void femElasticityAssembleNeumann(femProblem *theProblem) {
-  femFullSystem *theSystem = theProblem->system;
+  femBandSystem *theSystem = theProblem->system;///ajout
+  //femFullSystem *theSystem = theProblem->system;
   femIntegration *theRule = theProblem->ruleEdge;
   femDiscrete *theSpace = theProblem->spaceEdge;
   femGeo *theGeometry = theProblem->geometry;
@@ -201,7 +219,8 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
 }
 
 void femElasticityApplyDirichlet(femProblem *theProblem) {
-  femFullSystem *theSystem = theProblem->system;
+  femBandSystem *theSystem = theProblem->system;///ajout
+  //femFullSystem *theSystem = theProblem->system;
   femGeo *theGeometry = theProblem->geometry;
   femNodes *theNodes = theGeometry->theNodes;
 
@@ -213,17 +232,21 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
 
     if (type == DIRICHLET_X) {
       double value = theConstrainedNode->value1;
-      femFullSystemConstrain(theSystem, 2 * node + 0, value);
+      femBandSystemConstrain(theSystem, 2 * node + 0, value);///ajout
+      //femFullSystemConstrain(theSystem, 2 * node + 0, value);
     }
     if (type == DIRICHLET_Y) {
       double value = theConstrainedNode->value1;
-      femFullSystemConstrain(theSystem, 2 * node + 1, value);
+      femBandSystemConstrain(theSystem, 2 * node + 1, value);///ajout
+      //femFullSystemConstrain(theSystem, 2 * node + 1, value);
     }
     if (type == DIRICHLET_XY) {
       double value_x = theConstrainedNode->value1;
       double value_y = theConstrainedNode->value2;
-      femFullSystemConstrain(theSystem, 2 * node + 0, value_x);
-      femFullSystemConstrain(theSystem, 2 * node + 1, value_y);
+      femBandSystemConstrain(theSystem, 2 * node + 0, value_x);///ajout
+      femBandSystemConstrain(theSystem, 2 * node + 1, value_y);///ajout
+      //femFullSystemConstrain(theSystem, 2 * node + 0, value_x);
+      //femFullSystemConstrain(theSystem, 2 * node + 1, value_y);
     }
 
     if (type == DIRICHLET_N) {
@@ -231,8 +254,10 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       double nx = theConstrainedNode->nx;
       double ny = theConstrainedNode->ny;
       // A completer :-)
-      femFullSystemConstrain(theSystem, 2 * node + 0, value * nx);
-      femFullSystemConstrain(theSystem, 2 * node + 1, value * ny);
+      femBandSystemConstrain(theSystem, 2 * node + 0, value * nx);///ajout
+      femBandSystemConstrain(theSystem, 2 * node + 1, value * ny);///ajout
+      //femFullSystemConstrain(theSystem, 2 * node + 0, value * nx);
+      //femFullSystemConstrain(theSystem, 2 * node + 1, value * ny);
     }
     if (type == DIRICHLET_T) {
       double value = theConstrainedNode->value1;
@@ -243,8 +268,10 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       // A completer :-)
       double tx = -ny*value;
       double ty = nx*value;
-      femFullSystemConstrain(theSystem, 2 * node + 0, tx);
-      femFullSystemConstrain(theSystem, 2 * node + 1, ty);
+      femBandSystemConstrain(theSystem, 2 * node + 0, tx);///ajout
+      femBandSystemConstrain(theSystem, 2 * node + 1, ty);///ajout
+      //femFullSystemConstrain(theSystem, 2 * node + 0, tx);
+      //femFullSystemConstrain(theSystem, 2 * node + 1, ty);
     }
     if (type == DIRICHLET_NT) {
       double value_n = theConstrainedNode->value1;
@@ -254,14 +281,69 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       // A completer :-)
       double tx = -ny;
       double ty = nx;
-      femFullSystemConstrain(theSystem, 2 * node + 0, value_n * nx + value_t * tx); 
-      femFullSystemConstrain(theSystem, 2 * node + 1, value_n * ny + value_t * ty);
+      femBandSystemConstrain(theSystem, 2 * node + 0, value_n * nx + value_t * tx);///ajout
+      femBandSystemConstrain(theSystem, 2 * node + 1, value_n * ny + value_t * ty);///ajout
+      //femFullSystemConstrain(theSystem, 2 * node + 0, value_n * nx + value_t * tx); 
+      //femFullSystemConstrain(theSystem, 2 * node + 1, value_n * ny + value_t * ty);
 
 
     }
   }
 }
 
+
+// assemblage de la  bande 
+void femBandSystemAssemble(femBandSystem* myBandSystem, double *Aloc, double *Bloc, int *map, int nLoc)
+{
+    for (int i = 0; i < nLoc; ++i){
+        int row = map[i]; // on saute partout dans la matrice en prenant toutes les combinaisons des différentes indices
+        // possibles des noeuds d'un element (pex pour 0,3,2 on a 9 possibilités).
+        for (int j = 0; j < nLoc; ++j){
+            int column = map[j];
+            //on veut assembler la matrice mais que la partie supérieure donc on met le if ici pour s'en assurer
+            if (column >= row){
+                myBandSystem->A[map[i]][map[j]] += Aloc[i*nLoc + j];
+            }
+        }
+        myBandSystem->B[map[i]] += Bloc[i];
+
+    }
+}
+
+double *femBandSystemEliminate(femBandSystem *myBand) {
+  double  **A, *B, factor;
+    int     i, j, k, jend, size, band;
+    A    = myBand->A;
+    B    = myBand->B;
+    size = myBand->size;
+    band = myBand->band;
+    // on adapte la fonction de l'élimination de gauss et back substitution de fem.c pour qu'elle fonctionne avec une bande
+
+    for (int k = 0; k < size; ++k){
+        if (fabs(A[k][k]) <= 1e-8){ Error("Cannot eliminate with such a pivot.");}
+        //on prend ici en compte la taille de bande 
+        jend = (k+band < size) ? k+band : size; // on fait un min car quand on arrive à la fin de la matrice, la diagonale
+        // se rapprochera de plus en plus de la dernière colonne et diminue la taille de la bande, il y a des risques de
+        // débordement de mémoire.
+        for (int i = k+1; i < jend; ++i) {
+            factor = A[k][i] / A[k][k];
+            for (int j = i; j < jend; ++j) {
+                A[i][j] -= A[k][j] * factor;
+            }
+            B[i] -= B[k] * factor;
+        }
+    }
+    for (int i = size-1; i >= 0; --i) {
+        factor = 0;
+        jend = (i+band < size) ? i+band : size;
+        for (int j = i+1; j < jend; ++j) {
+            //la matrice est symmétrique donc on échange les indices pour toujours travailler dans la partie supérieure
+            factor += A[i][j] * B[j];
+        }
+        B[i] = (B[i] - factor)/A[i][i];
+    }
+    return(myBand->B);
+}
 
 
 
@@ -475,13 +557,15 @@ int* RenumberCuthill(femGeo *theGeometry) {
   
  }
 
- double *femElasticitySolve(femProblem *theProblem) {
+  double *femElasticitySolve(femProblem *theProblem) {
+  //RenumberCuthill(theProblem->geometry);
   femElasticityAssembleElements(theProblem);
-  RenumberCuthill(theProblem->geometry);
+
   femElasticityAssembleNeumann(theProblem);
   femElasticityApplyDirichlet(theProblem);
 
-  double *soluce = femFullSystemEliminate(theProblem->system);
+  //double *soluce = femFullSystemEliminate(theProblem->system);
+  double *soluce = femBandSystemEliminate(theProblem->system);///ajout
   memcpy(theProblem->soluce, soluce, theProblem->system->size * sizeof(double));
   return theProblem->soluce;
 }

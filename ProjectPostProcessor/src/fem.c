@@ -916,7 +916,7 @@ void femElasticityPrint(femProblem *theProblem) {
     if (theCondition->type == NEUMANN_N)
       printf(" imposing %9.2e as the normal force  \n", value1);
     if (theCondition->type == NEUMANN_T)
-      printf(" imposing %9.2e as the tangential force  \n", value1);
+      printf(" imposing %9.2e as the hydrostatic pressure  \n", value1);
   }
   printf(" ======================================================================================= \n\n");
 }

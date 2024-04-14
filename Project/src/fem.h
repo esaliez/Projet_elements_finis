@@ -26,12 +26,24 @@
 typedef enum { FEM_TRIANGLE, FEM_QUAD, FEM_EDGE } femElementType;
 typedef enum { DIRICHLET_X, DIRICHLET_Y, DIRICHLET_XY, DIRICHLET_N, DIRICHLET_T, DIRICHLET_NT, NEUMANN_X, NEUMANN_Y, NEUMANN_N, NEUMANN_T,NEUMANN_HYDROSTAT, UNDEFINED=-1} femBoundaryType;
 typedef enum { PLANAR_STRESS, PLANAR_STRAIN, AXISYM } femElasticCase;
+typedef enum {FEM_FULL,FEM_BAND,FEM_ITER} femSolverType;///ajout
 
 typedef struct {
   int nNodes;
   double *X;
   double *Y;
+  int *number;///ajout
 } femNodes;
+
+//////////////////////// ajout
+typedef struct {
+    double *B;
+    double **A;        
+    int size;
+    int band;        
+} femBandSystem;
+
+//////////////////////////
 
 typedef struct {
   int nLocalNode;
@@ -109,7 +121,8 @@ typedef struct {
   femIntegration *rule;
   femDiscrete *spaceEdge;
   femIntegration *ruleEdge;
-  femFullSystem *system;
+  //femFullSystem *system;
+  femBandSystem *system;///ajout
   femConstrainedNode *constrainedNodes;
 } femProblem;
 
@@ -139,6 +152,8 @@ double *femElasticitySolve(femProblem *theProblem);
 void femElasticityWrite(femProblem *theProbconst, const char *filename);
 femProblem *femElasticityRead(femGeo *theGeometry, const char *filename);
 
+
+
 void femSolutionWrite(int nNodes, int nfields, double *data, const char *filename);
 int femSolutiondRead(int allocated_size, double *value, const char *filename);
 
@@ -163,6 +178,18 @@ void femFullSystemAlloc(femFullSystem *mySystem, int size);
 double *femFullSystemEliminate(femFullSystem *mySystem);
 void femFullSystemConstrain(femFullSystem *mySystem, int myNode, double value);
 
+////////////////////////// ajout
+femBandSystem *femBandSystemCreate(int size, int band);
+void femBandSystemFree(femBandSystem *myBandSystem);
+void femBandSystemPrint(femBandSystem *myBandSystem);
+void femBandSystemInit(femBandSystem *myBandSystem);
+void femBandSystemAlloc(femBandSystem *myBandSystem, int size, int band);
+double *femBandSystemEliminate(femBandSystem *myBandSystem);
+void femBandSystemConstrain(femBandSystem *myBandSystem, int myNode, double value);
+void femBandSystemAssemble(femBandSystem *myBandSystem, double *Aloc, double *Bloc, int *map, int nLoc);
+////////////////////////////
+
+
 double femMin(double *x, int n);
 double femMax(double *x, int n);
 void femError(char *text, int line, char *file);
@@ -170,4 +197,8 @@ void femErrorScan(int test, int line, char *file);
 void femErrorGmsh(int test, int line, char *file);
 void femWarning(char *text, int line, char *file);
 
+////////// fonction ajoutées
+int* RenumberCuthill(femGeo *theGeometry);
+int compare(const void *a, const void *b);
+int compare2(const void *a, const void *b);
 #endif

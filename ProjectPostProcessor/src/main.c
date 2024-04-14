@@ -39,7 +39,7 @@ int main(void) {
   
   // A changer
   //double deformationFactor = 1e5; //init
-  double deformationFactor = 1e2;
+  double deformationFactor = 1e3;
   double *normDisplacement = malloc(theNodes->nNodes * sizeof(double));
 
   for (int i = 0; i < n; i++) {

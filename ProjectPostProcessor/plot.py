@@ -71,11 +71,11 @@ class Mesh:
         return a
 
 
-mesh = Mesh("../Project/data/mesh.txt")
+mesh = Mesh("mesh.txt")
 print(mesh)
-uv = np.loadtxt("../Project/data/UV.txt", skiprows=1, delimiter=",")
+uv = np.loadtxt("UV.txt", skiprows=1, delimiter=",")
 uv_norm = np.linalg.norm(uv, axis=1)
-factor = 5e4
+factor = 5e2
 
 cb = mesh.plotfield(uv_norm, uv*factor, cmap="turbo")
 plt.colorbar(cb)
