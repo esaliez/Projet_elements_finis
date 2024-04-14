@@ -558,12 +558,19 @@ int* RenumberCuthill(femGeo *theGeometry) {
  }
 
   double *femElasticitySolve(femProblem *theProblem) {
-  //RenumberCuthill(theProblem->geometry);
-  femElasticityAssembleElements(theProblem);
+  int* array = RenumberCuthill(theProblem->geometry);
+    int size = theProblem->geometry->theNodes->nNodes;
+    for (int i = 0; i < size; i++) {
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+
+  //femElasticityAssembleElements(theProblem);
 
   femElasticityAssembleNeumann(theProblem);
   femElasticityApplyDirichlet(theProblem);
 
+  femBandSystemAssemble(theProblem->system, theProblem->system->A, theProblem->system->B, array, size);
   //double *soluce = femFullSystemEliminate(theProblem->system);
   double *soluce = femBandSystemEliminate(theProblem->system);///ajout
   memcpy(theProblem->soluce, soluce, theProblem->system->size * sizeof(double));
