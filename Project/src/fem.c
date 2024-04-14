@@ -162,7 +162,7 @@ void geoMeshRead(const char *filename) {
 ///////////////////ajout
     theNodes->number = malloc(sizeof(int)*theNodes->nNodes);
    for (int i = 0; i < theNodes->nNodes; i++) 
-        theNodes->number[i] = i;
+        theNodes->number[i] = i;/// 
 /////////////////////////
   femMesh *theEdges = malloc(sizeof(femMesh));
   theGeometry.theEdges = theEdges;
