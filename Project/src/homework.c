@@ -4,10 +4,6 @@
 #include <stdbool.h>
 
 int *DEGREE;
-<<<<<<< HEAD
-
-=======
->>>>>>> 6cf21e73a70ed4ee5a775b9ef2047b39d60896fc
 // Il faut un fifrelin generaliser ce code.....
 //  (1) Ajouter l'axisymétrique !    (mandatory)
 //  (2) Ajouter les conditions de Neumann !   (mandatory)
@@ -434,8 +430,6 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
 }
 
   int compare(const void *a, const void *b){
-<<<<<<< HEAD
-=======
 
     int *x = *(int**)a;
     int *y = *(int**)b;
@@ -450,21 +444,8 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
       int y = *(int*)b;
   return (DEGREE[x] - DEGREE[y]);
   }
->>>>>>> 6cf21e73a70ed4ee5a775b9ef2047b39d60896fc
 
-    int *x = *(int**)a;
-    int *y = *(int**)b;
 
-    if(x[0] == y[0])
-      return (x[1] - y[1]);
-    return (x[0] - y[0]);
-  }
-
-  int compare2(const void *a, const void *b){
-      int x = *(int*)a;
-      int y = *(int*)b;
-  return (DEGREE[x] - DEGREE[y]);
-  }
 
  
 int* RenumberCuthill(femGeo *theGeometry) {
@@ -597,10 +578,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
         for (int i = rptr[minimum_node]; i < rptr[minimum_node+1]; i++) {
           q[next_empty_q++] = col[i];
         }
-<<<<<<< HEAD
-=======
         printf("next_empty_q : %d, size : %d \n", next_empty_q, theGeometry->theNodes->nNodes * theGeometry->theNodes->nNodes);
->>>>>>> 6cf21e73a70ed4ee5a775b9ef2047b39d60896fc
         printf("avant compare2 Renumber Cuthill\n");
 
       DEGREE = degree;
