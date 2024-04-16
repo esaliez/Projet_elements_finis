@@ -109,7 +109,7 @@ double calcul_hauteur(femProblem *theProblem, int iBnd){
   femGeo *theGeometry = theProblem->geometry;
   femNodes *theNodes = theGeometry->theNodes;
   femMesh *theEdges = theGeometry->theEdges;
-  int iBnd, iElem, iInteg, iEdge, i, j, d, map[2];
+  int iElem, iInteg, iEdge, i, j, d, map[2];
   double x[2], y[2], phi[2];
   int nLocal = 2;
   int y_max = -1;
@@ -429,15 +429,10 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
     return(myBand->B);
 }
 
+  int compare(const void *a, const void *b){
 
-
-
-
-
- int compare(const void *a, const void *b){
-
-    int x = *(int*)a;
-    int y = *(int*)b;
+    int *x = *(int**)a;
+    int *y = *(int**)b;
 
     if(x[0] == y[0])
       return (x[1] - y[1]);
@@ -445,11 +440,14 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
   }
 
   int compare2(const void *a, const void *b){
-      int x = (int)a;
-      int y = (int)b;
+      int x = *(int*)a;
+      int y = *(int*)b;
   return (DEGREE[x] - DEGREE[y]);
   }
 
+
+
+ 
 int* RenumberCuthill(femGeo *theGeometry) {
   printf("début Renumber Cuthill\n");
   //avoir une liste avec les noeuds et leurs degres
@@ -457,7 +455,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
   int *elem_list = mesh->elem;
 
   int list_size = mesh->nElem*mesh->nLocalNode*2;
-  int *list = malloc(sizeof(int) * list_size);
+  int **list = malloc(sizeof(int*) * list_size);
 
   for (int i = 0; i < list_size; i++) {
       list[i] = malloc(2*sizeof(int));
@@ -490,7 +488,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
 
   //etxpe 3 : supprimer les doublons   => bien faux mais hassoul
 
-    int *list_whithout_duplicates = malloc(list_size * sizeof(int));
+    int **list_whithout_duplicates = malloc(list_size * sizeof(int*));
     //for (int i = 0; i < list_size; i++) {
     //    list_whithout_duplicates[i] = malloc(2*sizeof(int));
     //  }
@@ -667,11 +665,13 @@ int* RenumberCuthill(femGeo *theGeometry) {
  }
 
   double *femElasticitySolve(femProblem *theProblem) {
+  printf("oui1\n");
   int* array = RenumberCuthill(theProblem->geometry);
-    int size = theProblem->geometry->theNodes->nNodes;
-    for (int i = 0; i < size; i++) {
-        printf("%d ", array[i]);
-    }
+  printf("oui\n");
+  int size = theProblem->geometry->theNodes->nNodes;
+  for (int i = 0; i < size; i++) {
+      printf("%d ", array[i]);
+  }
     printf("\n");
 
   //femElasticityAssembleElements(theProblem);
