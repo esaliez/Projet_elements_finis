@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+int *DEGREE;
+
 // Il faut un fifrelin generaliser ce code.....
 //  (1) Ajouter l'axisymétrique !    (mandatory)
 //  (2) Ajouter les conditions de Neumann !   (mandatory)
@@ -345,10 +347,24 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
     return(myBand->B);
 }
 
+  int compare(const void *a, const void *b){
 
+    int *x = *(int**)a;
+    int *y = *(int**)b;
 
+    if(x[0] == y[0])
+      return (x[1] - y[1]);
+    return (x[0] - y[0]);
+  }
+
+  int compare2(const void *a, const void *b){
+      int x = *(int*)a;
+      int y = *(int*)b;
+  return (DEGREE[x] - DEGREE[y]);
+  }
 
 int* RenumberCuthill(femGeo *theGeometry) {
+  printf("début Renumber Cuthill\n");
   //avoir une liste avec les noeuds et leurs degres
   femMesh *mesh = theGeometry->theElements;
   int *elem_list = mesh->elem;
@@ -381,24 +397,18 @@ int* RenumberCuthill(femGeo *theGeometry) {
   }
   //etape 2 : trier la liste 
 
-  int compare(const void *a, const void *b){
 
-    int *x = *(int**)a;
-    int *y = *(int**)b;
-
-    if(x[0] == y[0])
-      return (x[1] - y[1]);
-    return (x[0] - y[0]);
-  }
 
   qsort(list, list_size, sizeof(int*), compare);
 
   //etxpe 3 : supprimer les doublons   => bien faux mais hassoul
 
     int **list_whithout_duplicates = malloc(list_size * sizeof(int*));
-    for (int i = 0; i < list_size; i++) {
-        list_whithout_duplicates[i] = malloc(2*sizeof(int));
-      }
+    //for (int i = 0; i < list_size; i++) {
+    //    list_whithout_duplicates[i] = malloc(2*sizeof(int));
+    //  }
+    printf("avant list_whithout_duplicate\n");
+        
 
     int size = 1;
     list_whithout_duplicates[0] = list[0];
@@ -407,6 +417,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
             list_whithout_duplicates[size++] = list[i];
         }
     }
+    printf("après list_whithout_duplicate\n");
     
 
   //etape 4 : créer les vecteurs col et rptr 
@@ -422,11 +433,14 @@ int* RenumberCuthill(femGeo *theGeometry) {
   int num = 0;
   int noeud_actuel = list_whithout_duplicates[0][0];
 
+  printf("intermédiaire\n");
+  
   for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
-    
-    while(list_whithout_duplicates[num][0] == noeud_actuel){
-      degree[i]=0;
-      col[num_col++] = list_whithout_duplicates[num++][1];
+    degree[i]=0;
+    while(num < size-1 && list_whithout_duplicates[num][0] == noeud_actuel ){
+
+
+      col[num_col++] = list_whithout_duplicates[num++][1]; //size-1 me parait bizarre 
       degree[i]++;}
     
     rptr[i] = num_col;
@@ -435,7 +449,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
 
 
   }
-
+  printf("millieu Renumber Cuthill\n");
 
 //Instantiate an empty queue Q and empty array for permutation order of the objects R.
   int *q = malloc(sizeof(int)*theGeometry->theNodes->nNodes*theGeometry->theNodes->nNodes);
@@ -465,7 +479,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
 
   while(change){
 
-
+   //next_empty_r<theGeometry->theNodes->nNodes &&
 
       r[next_empty_r++] = minimum_node;
       not_visited[minimum_node] = false;
@@ -478,15 +492,11 @@ int* RenumberCuthill(femGeo *theGeometry) {
         for (int i = rptr[minimum_node]; i < rptr[minimum_node+1]; i++) {
           q[next_empty_q++] = col[i];
         }
+        printf("avant compare2 Renumber Cuthill\n");
 
-        int compare2(const void *a, const void *b){
-            int x = *(int*)a;
-            int y = *(int*)b;
-        return (degree[x] - degree[y]);
-      }
-
-        qsort(q, next_empty_q, sizeof(int), compare2);
-
+      DEGREE = degree;
+      qsort(q, next_empty_q, sizeof(int), compare2);
+      printf("après compare2 Renumber Cuthill\n");
 
 
 
@@ -494,9 +504,9 @@ int* RenumberCuthill(femGeo *theGeometry) {
     //S3: Extract the first node in Q, say C. If C has not been inserted in R, add it to R, add to Q the neighbors 
     //    of C in increasing order of degree.
     //S4: If Q is not empty, repeat S3.
-
+    int C;
         while(first_filled_q < next_empty_q){
-          int C = q[first_filled_q++];
+          C = q[first_filled_q++];
           if(not_visited[C]){
             r[next_empty_r++] = C;
             not_visited[C] = false;
@@ -532,7 +542,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
         r[theGeometry->theNodes->nNodes - i - 1] = temp;
     }
 
-
+    printf("avant de free Renumber Cuthill\n");
     // section free (j'ai été un peu vite la dessus)   
     for (int i = 0; i < list_size; i++) {
         free(list[i]);
@@ -540,29 +550,41 @@ int* RenumberCuthill(femGeo *theGeometry) {
 
     free(list);
 
-    for (int i = 0; i < list_size; i++) {
-        free(list_whithout_duplicates[i]);
-    }
-
-    free(list_whithout_duplicates);
+    printf("millieu free Renumber Cuthill\n");
+    //for (int i = 0; i < list_size; i++) {
+    //    free(list_whithout_duplicates[i]);
+    //}
+    printf("après for free Cuthill\n");
+    //free(list_whithout_duplicates);
 
     free(col);
     free(rptr);
+    printf("trois quart free Renumber Cuthill\n");
     free(degree);
     free(q);
     //free(r);
     free(not_visited);
 
-    return r;  
+
+
+    for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+        theGeometry->theNodes->number[i] = r[i];
+    }
+    
+    printf("fin Renumber Cuthill\n");
+    return r; 
+
   
  }
 
   double *femElasticitySolve(femProblem *theProblem) {
+  printf("oui1\n");
   int* array = RenumberCuthill(theProblem->geometry);
-    int size = theProblem->geometry->theNodes->nNodes;
-    for (int i = 0; i < size; i++) {
-        printf("%d ", array[i]);
-    }
+  printf("oui\n");
+  int size = theProblem->geometry->theNodes->nNodes;
+  for (int i = 0; i < size; i++) {
+      printf("%d ", array[i]);
+  }
     printf("\n");
 
   //femElasticityAssembleElements(theProblem);
