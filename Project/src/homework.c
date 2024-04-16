@@ -4,7 +4,10 @@
 #include <stdbool.h>
 
 int *DEGREE;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6cf21e73a70ed4ee5a775b9ef2047b39d60896fc
 // Il faut un fifrelin generaliser ce code.....
 //  (1) Ajouter l'axisymétrique !    (mandatory)
 //  (2) Ajouter les conditions de Neumann !   (mandatory)
@@ -12,7 +15,7 @@ int *DEGREE;
 //  (4) Et remplacer le solveur plein par un truc un fifrelin plus subtil  (mandatory)
 
 void femElasticityAssembleElements(femProblem *theProblem) {
-  femBandSystem *theSystem = theProblem->system;///ajou
+  femBandSystem *theSystem = theProblem->system;///ajout
   //femFullSystem *theSystem = theProblem->system;
   femIntegration *theRule = theProblem->rule;
   femDiscrete *theSpace = theProblem->space;
@@ -80,6 +83,10 @@ void femElasticityAssembleElements(femProblem *theProblem) {
             A[mapY[i]][mapY[j]] += (mapY[j] >= mapY[i]) ? (dphidy[i] * a * r * dphidy[j] + dphidx[i] * c * r * dphidx[j]) * jac * weight : 0.0;
           }
         }
+        for (i = 0; i < theSpace->n; i++) {
+          B[mapX[i]] += phi[i] * gx * rho * jac * weight*r;
+          B[mapY[i]] += phi[i] * gy * rho * jac * weight*r;
+        }
       }else{
       for (i = 0; i < theSpace->n; i++) {
           for (j = 0; j < theSpace->n; j++) {
@@ -100,8 +107,44 @@ void femElasticityAssembleElements(femProblem *theProblem) {
   }
 }
 
+//////// Le but ici est de connaitre la hauteur totale de la stucture. 
+//////// On va parcourir les positions 'y' des noeuds pour avoir la positions min et max.
+double calcul_hauteur(femProblem *theProblem, int iBnd){
+  femGeo *theGeometry = theProblem->geometry;
+  femNodes *theNodes = theGeometry->theNodes;
+  femMesh *theEdges = theGeometry->theEdges;
+  int iElem, iInteg, iEdge, i, j, d, map[2];
+  double x[2], y[2], phi[2];
+  int nLocal = 2;
+  int y_max = -1;
+  int y_min = -1;
+  int y_moy;
+  int POS;
+  femBoundaryCondition *theCondition = theProblem->conditions[iBnd];
+  int iEl;
+  int hauteur;
+    for (int iEd = 0; iEd < theCondition->domain->nElem; iEd++) {
+      iEl = theCondition->domain->elem[iEd];
+      for (int k = 0; k < nLocal; k++) {
+        map[k] = theEdges->elem[iEl * nLocal + k];
+        y[k] = theNodes->Y[map[k]];
+        if(y_max == -1 && y_min == -1){
+          y_max = y[k];
+          y_min = y[k];
+        }
+        if(y[k] > y_max){
+          y_max = y[k];
+        }
+        if(y[k] < y_min){
+          y_min = y[k];
+        }
+      }
+    }
 
-
+    hauteur = y_max - y_min;
+  
+  return hauteur;
+}
 
 
 
@@ -117,6 +160,9 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
   int iBnd, iElem, iInteg, iEdge, i, j, d, map[2];
   int nLocal = 2;
   double *B = theSystem->B;
+  double pos;
+  double y_moy;
+  double hauteur;
 
   for (iBnd = 0; iBnd < theProblem->nBoundaryConditions; iBnd++) {
     femBoundaryCondition *theCondition = theProblem->conditions[iBnd];
@@ -126,6 +172,7 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
     if(type != NEUMANN_X && type != NEUMANN_Y && type != NEUMANN_N && type != NEUMANN_T && type != NEUMANN_HYDROSTAT){
       continue;
     }
+    /*
 //////// Le but ici est de connaitre la hauteur totale de la stucture. 
 //////// On va parcourir les positions 'y' des noeuds pour avoir la positions min et max.
 
@@ -155,9 +202,11 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
     }
 
     hauteur = y_max - y_min;//
+*/
 ////////////////////////////////////////////
 ////// Maintenant on applique la condition de Neumann sur chaque morceaux de chaque domaine 
-    
+    hauteur = calcul_hauteur(theProblem, iBnd);
+
     for (iEdge = 0; iEdge < theCondition->domain->nElem; iEdge++) {
       iElem = theCondition->domain->elem[iEdge];
       for (j = 0; j < nLocal; j++) {
@@ -167,8 +216,8 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
         
       }
        
-      int y_moy = (y[0]+y[1])/2; //
-      POS = y_moy - hauteur;//
+      y_moy = (y[0]+y[1])/2; //
+      pos = y_moy - hauteur;//
 
       double tx = x[1] - x[0];
       double ty = y[1] - y[0];
@@ -195,7 +244,7 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
       }
       ///////
       if (type == NEUMANN_HYDROSTAT){
-        f_x = value * POS;//
+        f_x = value * pos;//
       }
       ///////
 
@@ -206,19 +255,29 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
       // Une petite aide pour le calcul de la normale :-)
       // double nx =  ty / length;
       // double ny = -tx / length;
-
+      double r = 0.0;
       for (iInteg = 0; iInteg < theRule->n; iInteg++) {
         double xsi = theRule->xsi[iInteg];
         double weight = theRule->weight[iInteg];
         femDiscretePhi(theSpace, xsi, phi);
-        for (i = 0; i < theSpace->n; i++) {
-          B[2*map[i] + 0] += jac * weight * phi[i] * f_x;
-          B[2*map[i] + 1] += jac * weight * phi[i] * f_y;
+        for(i = 0; i < theSpace->n; i++){r = x[i]*phi[i];}
+        if (theProblem->planarStrainStress == AXISYM){
+          for (i = 0; i < theSpace->n; i++) {
+            B[2*map[i] + 0] += jac * weight * phi[i] * f_x*r;
+            B[2*map[i] + 1] += jac * weight * phi[i] * f_y*r;
+          }
+        }else{
+          for (i = 0; i < theSpace->n; i++) {
+            B[2*map[i] + 0] += jac * weight * phi[i] * f_x;
+            B[2*map[i] + 1] += jac * weight * phi[i] * f_y;
+        }
+
+        }
         }
       }
     }
   }
-}
+
 
 void femElasticityApplyDirichlet(femProblem *theProblem) {
   femBandSystem *theSystem = theProblem->system;///ajout
@@ -293,6 +352,33 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
   }
 }
 
+# define MAX(a, b) ((a > b) ? (a) : (b)) // Pour comprendre les macros
+# define MIN(a, b) ((a < b) ? (a) : (b)) // cf. notre précédent solutionnaire
+
+int femMeshComputeBand(femMesh *theMesh) {
+
+    int myMax, myMin, myBand, map[4];
+    int nLocal = theMesh->nLocalNode;
+    myBand = 0;
+
+    for (int iElem = 0; iElem < theMesh->nElem; iElem++) {
+        for (int j = 0; j < nLocal; ++j)
+            map[j] = theMesh->nodes->number[theMesh->elem[iElem * nLocal + j]];
+
+        // On trouve le noeud maximum et minimum
+        myMin = map[0];
+        myMax = map[0];
+        for (int j = 1; j < nLocal; j++) {
+            myMax = MAX(map[j], myMax);
+            myMin = MIN(map[j], myMin);
+        }
+
+        if (myBand < (myMax - myMin))
+            myBand = myMax - myMin;
+    }
+
+    return (++myBand); // On incrémente de 1 myBand avant de le renvoyer (formule)
+}
 
 // assemblage de la  bande 
 void femBandSystemAssemble(femBandSystem* myBandSystem, double *Aloc, double *Bloc, int *map, int nLoc)
@@ -348,6 +434,23 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
 }
 
   int compare(const void *a, const void *b){
+<<<<<<< HEAD
+=======
+
+    int *x = *(int**)a;
+    int *y = *(int**)b;
+
+    if(x[0] == y[0])
+      return (x[1] - y[1]);
+    return (x[0] - y[0]);
+  }
+
+  int compare2(const void *a, const void *b){
+      int x = *(int*)a;
+      int y = *(int*)b;
+  return (DEGREE[x] - DEGREE[y]);
+  }
+>>>>>>> 6cf21e73a70ed4ee5a775b9ef2047b39d60896fc
 
     int *x = *(int**)a;
     int *y = *(int**)b;
@@ -363,6 +466,7 @@ double *femBandSystemEliminate(femBandSystem *myBand) {
   return (DEGREE[x] - DEGREE[y]);
   }
 
+ 
 int* RenumberCuthill(femGeo *theGeometry) {
   printf("début Renumber Cuthill\n");
   //avoir une liste avec les noeuds et leurs degres
@@ -478,6 +582,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
     }
 
   while(change){
+    printf("------------début du while------------\n");
 
    //next_empty_r<theGeometry->theNodes->nNodes &&
 
@@ -492,6 +597,10 @@ int* RenumberCuthill(femGeo *theGeometry) {
         for (int i = rptr[minimum_node]; i < rptr[minimum_node+1]; i++) {
           q[next_empty_q++] = col[i];
         }
+<<<<<<< HEAD
+=======
+        printf("next_empty_q : %d, size : %d \n", next_empty_q, theGeometry->theNodes->nNodes * theGeometry->theNodes->nNodes);
+>>>>>>> 6cf21e73a70ed4ee5a775b9ef2047b39d60896fc
         printf("avant compare2 Renumber Cuthill\n");
 
       DEGREE = degree;
