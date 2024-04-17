@@ -115,7 +115,6 @@ double calcul_hauteur(femProblem *theProblem, int iBnd){
   int y_max = -1;
   int y_min = -1;
   int y_moy;
-  int POS;
   femBoundaryCondition *theCondition = theProblem->conditions[iBnd];
   int iEl;
   int hauteur;

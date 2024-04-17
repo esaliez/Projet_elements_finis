@@ -1,3 +1,11 @@
+pour vérifier:
+-la pression hydrostatique, calculer à la main et comparer
+-le code, comparer avec fem_full_test
+-justifier le maillage en changeant la taille et jusqu'a atteindre une différence de déformation négligeable.(se renseigner sur la ductilité du béton, normalement c'est rupture fragile donc supporte très peu les déplacement en cisaillement)
+
+
+
+
 Faire le projet:
 V-créer la forme 
 V-créer le maillage progressif et fin aux endroits les plus contraints
@@ -8,6 +16,7 @@ V-créer la force hydrostatique (->discrete ?)
 -enlever de la matiere en itérant
 -faire un rapport de 2 pages
 -préparer la présentation orale
+-modifier les données physiques pour "changer" le remplissage du béton, faire des micro trous en changeant la porositté et la masse volumique.
 
 -PLANAR_STRAIN
 
