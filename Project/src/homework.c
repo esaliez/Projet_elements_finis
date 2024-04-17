@@ -111,8 +111,8 @@ double calcul_hauteur(femProblem *theProblem, int iBnd){
   femGeo *theGeometry = theProblem->geometry;
   femNodes *theNodes = theGeometry->theNodes;
   femMesh *theEdges = theGeometry->theEdges;
-  int iElem, iInteg, iEdge, i, j, d, map[2];
-  double x[2], y[2], phi[2];
+  int map[2];
+  double y[2];
   int nLocal = 2;
   int y_max = -1;
   int y_min = -1;
@@ -169,38 +169,8 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
     if(type != NEUMANN_X && type != NEUMANN_Y && type != NEUMANN_N && type != NEUMANN_T && type != NEUMANN_HYDROSTAT){
       continue;
     }
-    /*
-//////// Le but ici est de connaitre la hauteur totale de la stucture. 
-//////// On va parcourir les positions 'y' des noeuds pour avoir la positions min et max.
+    
 
-    int iEl;//utiliser d'autres variables pour ne pas ecraser les variables de boucle
-    int hauteur;// calcule de la hauteur du domaine en question
-    int y_max = -1;//
-    int y_min = -1;//
-    int y_moy;//distance au centre d'une arete depuis l'origine
-    int POS; // position correcte avec 0 au dessus du barrage, donc négative. Correspond à y dans rho*g*y
-    int number_elem = theCondition->domain->nElem;
-    for (int iEd = 0; iEd < theCondition->domain->nElem; iEd++) {
-      iEl = theCondition->domain->elem[iEd];
-      for (int k = 0; k < nLocal; k++) {
-        map[k] = theEdges->elem[iEl * nLocal + k];
-        y[k] = theNodes->Y[map[k]];
-        if(y_max == -1 && y_min == -1){
-          y_max = y[k];
-          y_min = y[k];
-        }
-        if(y[k] > y_max){
-          y_max = y[k];
-        }
-        if(y[k] < y_min){
-          y_min = y[k];
-        }
-      }
-    }
-
-    hauteur = y_max - y_min;//
-*/
-////////////////////////////////////////////
 ////// Maintenant on applique la condition de Neumann sur chaque morceaux de chaque domaine 
     hauteur = calcul_hauteur(theProblem, iBnd);
 
@@ -348,103 +318,77 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
     }
   }
 }
-/*
-femFullSystem *femFullSystemCreate(int size)
-{
-    femFullSystem *theSystem = malloc(sizeof(femFullSystem));
-    theSystem->A = malloc(sizeof(double*) * size); 
-    theSystem->B = malloc(sizeof(double) * size * (size+1));
-    theSystem->A[0] = theSystem->B + size;  
-    theSystem->size = size;
-    int i;
-    for (i=1 ; i < size ; i++) 
-        theSystem->A[i] = theSystem->A[i-1] + size;
-    femFullSystemInit(theSystem);
 
-    return theSystem; 
-}
-*/
-
-# define MAX(a, b) ((a > b) ? (a) : (b)) // Pour comprendre les macros
-# define MIN(a, b) ((a < b) ? (a) : (b)) // cf. notre précédent solutionnaire
-/*
-int femMeshComputeBand(femMesh *theMesh) {
-
-    int myMax, myMin, myBand, map[4];
-    int nLocal = theMesh->nLocalNode;
-    myBand = 0;
-
-    for (int iElem = 0; iElem < theMesh->nElem; iElem++) {
-        for (int j = 0; j < nLocal; ++j)
-            map[j] = theMesh->nodes->number[theMesh->elem[iElem * nLocal + j]];
-
-        // On trouve le noeud maximum et minimum
-        myMin = map[0];
-        myMax = map[0];
-        for (int j = 1; j < nLocal; j++) {
-            myMax = MAX(map[j], myMax);
-            myMin = MIN(map[j], myMin);
-        }
-
-        if (myBand < (myMax - myMin))
-            myBand = myMax - myMin;
-    }
-
-    return (++myBand); // On incrémente de 1 myBand avant de le renvoyer (formule)
-}
-*/
 
 int matrixComputeBand(double **A, int size) {
     int myBand = 0;
     for (int i = 0; i < size; i++) {
-        for (int j = 0; j < i; j++) {
-            if (A[i][j] != 0) {
-                myBand = MAX(myBand, i-j);
+        for (int j = 0; j < size; j++) {
+            if (A[i][j] != 0 && abs(i-j) > myBand){
+                myBand = abs(i-j);
             }
         }
     }
     return myBand;
 }
-/*
-// assemblage de la  bande 
-void femBandSystemAssemble(femBandSystem* myBandSystem, double *Aloc, double *Bloc, int *map, int nLoc)
-{
-    for (int i = 0; i < nLoc; ++i){
-        int row = map[i]; // on saute partout dans la matrice en prenant toutes les combinaisons des différentes indices
-        // possibles des noeuds d'un element (pex pour 0,3,2 on a 9 possibilités).
-        for (int j = 0; j < nLoc; ++j){
-            int column = map[j];
-            //on veut assembler la matrice mais que la partie supérieure donc on met le if ici pour s'en assurer
-            if (column >= row){
-                myBandSystem->A[map[i]][map[j]] += Aloc[i*nLoc + j];
-            }
-        }
-        myBandSystem->B[map[i]] += Bloc[i];
 
+
+  localMatrix *matrixLocalCreate(int size, double **A, double *B, int *r){
+    double **Arenum = malloc(sizeof(double*) * size);
+    for(int i = 0; i<size ;i++){
+      Arenum[i] = malloc(sizeof(double) * size);
     }
-}
-*/
+    for(int i = 0; i<size ;i++){
+      for(int j = 0; j<size ;j++){
+        Arenum[i][j] = A[r[i]][r[j]];
+      }
+    }
+    double *Brenum = malloc(sizeof(double) * size);
+    for(int i = 0; i<size ;i++){
+      Brenum[i] = B[r[i]];
+    }
+    localMatrix *local = malloc(sizeof(localMatrix));
+    local->Aloc = Arenum;
+    local->Bloc = Brenum;
+    return local; //modifier pour soit créer la stucture direct dans la fonction eliminate et juste appeler matrixLocalCreate dans eliminate, soit faire 2 sous fonction qui créent A et B séparément
+  }
+
+  double* InverseMatrix(double* B, int* r, int size){//a modifier !!
+    int *invX = malloc(sizeof(double) * size);
+    for(int i = 0; i<size; i++){
+      invX[r[i]] = i;
+    }
+    double* X = malloc(sizeof(double) * size);
+    for(int i = 0; i<size; i++){
+      X[i] = B[invX[i]];
+    }
+    free(invX);
+    return X;
+  }
 
 //je resoud plus vite puis je remets dans mon A pour que ça corresponde au mesh
-
 double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, int size) {
     femGeo *theGeometry = theProblem->geometry;
     
-    int i, j, k, jend;
+    int jend;
     double factor;
-   
-    int band = matrixComputeBand(A, size);
+    int bandA, band;
     
+    bandA = matrixComputeBand(A, size);//pour voir la différence
+    printf("bandA = %d\n", bandA);
     int* renumber = RenumberCuthill(theGeometry);
+    printf("\n%d",1);
 
-    LocalMatrix *local = matrixLocalCreate(size, A, B, renumber);
-
-    band = matrixComputeBand(local->Aloc, size);
-
-    A = local->Aloc;
-    B = local->Bloc; //modifie pour avoir Aloc et Bloc
     
+    localMatrix *newlocal = matrixLocalCreate(size, A, B, renumber);
 
+    printf("\n%d",2);
+    //band = matrixComputeBand(local->Aloc, size);
+    band = matrixComputeBand(newlocal->Aloc, size);
+    printf("\n%d",3);
+    A = newlocal->Aloc;
+    B = newlocal->Bloc; //modifie pour avoir Aloc et Bloc
+    
     for (int k = 0; k < size; ++k){
         if (fabs(A[k][k]) <= 1e-8){ Error("Cannot eliminate with such a pivot.");}
         //on prend ici en compte la taille de bande 
@@ -472,37 +416,13 @@ double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, in
     double *X = malloc(sizeof(double) * size);
     X = InverseMatrix(B, renumber, size);
     free(renumber);
-    free(local);
+    free(newlocal);
     return X;
     
 }
 
-  double* InverseMatrix(double* B, int* r, int size){//a modifier !!
-    int *invX = malloc(sizeof(double) * size);
-    for(int i = 0; i<size; i++){
-      invX[r[i]] = i;
-    }
-    double* X = malloc(sizeof(double) * size);
-    for(int i = 0; i<size; i++){
-      X[i] = B[invX[i]];
-    }
-    free(invX);
-    return X;
-  }
-  LocalMatrix *matrixLocalCreate(int size, double **A, double *B, int *r){
-    double **Aloc = malloc(sizeof(double*) * size);
-    double *Bloc = malloc(sizeof(double) * size);
-    for(int i = 0; i<size ;i++){
-      for(int j = 0; j<size;j++){
-        Aloc[i][j] = A[r[i]][r[j]];
-      }
-      Bloc[i] = B[r[i]];
-    }
-    LocalMatrix *local = malloc(sizeof(LocalMatrix));
-    local->Aloc = Aloc;
-    local->Bloc = Bloc;
-    return local; //modifier pour soi tcréer la stucture direct dans la fonction eliminate et juste appeler matrixLocalCreate dans eliminate, soit faire 2 sous fonction qui créent A et B séparément
-  }
+
+
 
   int compare(const void *a, const void *b){
 
@@ -520,9 +440,6 @@ double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, in
   return (DEGREE[x] - DEGREE[y]);
   }
 
-
-
- 
 int* RenumberCuthill(femGeo *theGeometry) {
   //printf("début Renumber Cuthill\n");
   //avoir une liste avec les noeuds et leurs degres
@@ -732,7 +649,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
    }
 */
     for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
-        theGeometry->theNodes->number[i] = r[i];
+        //theGeometry->theNodes->number[i] = r[i];
         printf("%d ",r[i]);
     }
     
@@ -751,8 +668,14 @@ int* RenumberCuthill(femGeo *theGeometry) {
   femElasticityAssembleElements(theProblem);
   femElasticityAssembleNeumann(theProblem);
   femElasticityApplyDirichlet(theProblem);
-
-
+  /*
+  for(int i=0 ; i<size ; i++){
+    for(int j=0 ; j<size ; j++){
+      printf("%f ", A[i][j]);
+    }
+    printf("\n");
+  }
+  */
   
   //double *soluce = femFullSystemEliminate(theProblem->system);
   double *soluce = femBandSystemEliminate(theProblem, A, B, size);

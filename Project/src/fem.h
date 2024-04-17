@@ -126,6 +126,13 @@ typedef struct {
   femConstrainedNode *constrainedNodes;
 } femProblem;
 
+//////////////////////
+typedef struct{
+  double ** Aloc;
+  double * Bloc;
+} localMatrix;
+//////////////////////
+
 void geoInitialize(void);
 femGeo *geoGetGeometry(void);
 double geoSize(double x, double y);
@@ -184,7 +191,7 @@ void femBandSystemFree(femBandSystem *myBandSystem);
 void femBandSystemPrint(femBandSystem *myBandSystem);
 void femBandSystemInit(femBandSystem *myBandSystem);
 void femBandSystemAlloc(femBandSystem *myBandSystem, int size, int band);
-double *femBandSystemEliminate(femBandSystem *myBandSystem);
+//double *femBandSystemEliminate(femBandSystem *myBandSystem);
 void femBandSystemConstrain(femBandSystem *myBandSystem, int myNode, double value);
 void femBandSystemAssemble(femBandSystem *myBandSystem, double *Aloc, double *Bloc, int *map, int nLoc);
 ////////////////////////////
@@ -198,7 +205,12 @@ void femErrorGmsh(int test, int line, char *file);
 void femWarning(char *text, int line, char *file);
 
 ////////// fonction ajoutées
+double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, int size);
+double* InverseMatrix(double* B, int* r, int size);
+localMatrix *matrixLocalCreate(int size, double **A, double *B, int *r);
+
 int* RenumberCuthill(femGeo *theGeometry);
 int compare(const void *a, const void *b);
 int compare2(const void *a, const void *b);
+double calcul_hauteur(femProblem *theProblem, int iBnd);
 #endif

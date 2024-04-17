@@ -13,7 +13,7 @@ double geoSize(double x, double y) {
   
   femGeo *theGeometry = geoGetGeometry();
   double h = theGeometry->h;
-  int h_min = 5; //taille minimale des triangles
+  int h_min = 100; //taille minimale des triangles
   int h_max = 25; //taille maximale des triangles
 
   int b_X_1 = 15; //taille de la  zone grande précision coté gauche
