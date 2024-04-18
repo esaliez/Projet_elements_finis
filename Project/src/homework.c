@@ -380,13 +380,6 @@ double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, in
     bandA = matrixComputeBand(A, size);//pour voir la différence
     printf("bandA = %d\n", bandA);
     int* renumber = RenumberCuthill(theGeometry);
-
-    for(int i = 0; i<size ;i++){
-      
-        printf("renumber : %d //", renumber[i]);
-      
-      printf("\n");
-    }
     printf("\n%d",1);
     /*
     int *renumber = malloc(sizeof(int)*24);
@@ -636,13 +629,6 @@ int* RenumberCuthill(femGeo *theGeometry) {
         r[theGeometry->theNodes->nNodes - i - 1] = temp;
     }
 
-    free(r);
-    int* renumber = malloc(sizeof(int) * theGeometry->theNodes->nNodes*2);
-    for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
-        renumber[2*i] = 2*r[i];
-        renumber[2*i+1] = 2*r[i]+1;
-    }
-
     //printf("avant de free Renumber Cuthill\n");
     // section free (j'ai été un peu vite la dessus)   
     int* renumber = malloc(sizeof(int) * theGeometry->theNodes->nNodes*2);
@@ -686,13 +672,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
     //printf("fin Renumber Cuthill\n");
 
     return renumber; 
-<<<<<<< Updated upstream
-
-  
- }
-=======
 }
->>>>>>> Stashed changes
 
   double *femElasticitySolve(femProblem *theProblem) {
   femBandSystem *theSystem = theProblem->system;
@@ -702,14 +682,14 @@ int* RenumberCuthill(femGeo *theGeometry) {
   femElasticityAssembleElements(theProblem);
   femElasticityAssembleNeumann(theProblem);
   femElasticityApplyDirichlet(theProblem);
-  
-  /*for(int i=0 ; i<size ; i++){
+  /*
+  for(int i=0 ; i<size ; i++){
     for(int j=0 ; j<size ; j++){
       printf("%f ", A[i][j]);
     }
     printf("\n");
-  }*/
-  
+  }
+  */
   
   //double *soluce = femFullSystemEliminate(theProblem->system);
   double *soluce = femBandSystemEliminate(theProblem, A, B, size);
