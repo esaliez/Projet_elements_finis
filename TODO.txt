@@ -1,3 +1,46 @@
+Dans le code:
+-le faire marcher(solver band - cuthill)
+-faire n et t dans dirichlet
+-tout nettoyer et le commenter, le rendre lisible le plus possible 
+-vérifier l'allocation de mémoire
+
+Dans le code pour le rapport:
+>>>Faire des graphes, pleins de graphe et des explication physique<<<
+-(en echelle logarithmique)comparer la vitesse de FULL, solver band non renumeroté et solver band renuméroté en fonction du nombre de triangle
+-faire évoluer les constantes physique pour faire évoluer la porosité du béton et sa masse volumique et faire évoluer son remplissage
+-trouver la limite de remplissage(trou dans le béton) du barrage
+-faire un graphe de la hauteur finale en fonction de la porosité/masse volumique
+-évolution du déplacement en fonction duu nombre de triangles
+-comparer les réponses de FULL SOLVERBAND et SOLVERBANDRENUM pour prouver que ça marche
+-graphe d'évolution de la pression hydrostatique en fonction de la hauteur
+-
+
+Dans le rapport:
+>>>mettre à chaque fois ce qu'il y a au dessus, pas d'image sans explication ou simple commentaire<<<
+>>>expliquer la physique<<<
+-expliquer le probleme et la pertinence pour la transisition écologique -> chiffres officiel
+-montrer un graphe des répartition des énergies electrique, sa pertinence, utilité
+-expliquer ce qui se passe physiquement, force hydrostatique, choix des matériaux, choix du profil,
+-force hydrostatique: expliquer son implémentation
+-choix du solveur, pourquoi?
+-justifier la modélisation
+-justifier++
+-++++++
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 pour vérifier:
 -la pression hydrostatique, calculer à la main et comparer
 -le code, comparer avec fem_full_test
