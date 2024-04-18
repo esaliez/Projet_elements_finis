@@ -377,6 +377,13 @@ double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, in
     bandA = matrixComputeBand(A, size);//pour voir la différence
     printf("bandA = %d\n", bandA);
     int* renumber = RenumberCuthill(theGeometry);
+
+    for(int i = 0; i<size ;i++){
+      
+        printf("renumber : %d //", renumber[i]);
+      
+      printf("\n");
+    }
     printf("\n%d",1);
 
     
@@ -668,14 +675,14 @@ int* RenumberCuthill(femGeo *theGeometry) {
   femElasticityAssembleElements(theProblem);
   femElasticityAssembleNeumann(theProblem);
   femElasticityApplyDirichlet(theProblem);
-  /*
-  for(int i=0 ; i<size ; i++){
+  
+  /*for(int i=0 ; i<size ; i++){
     for(int j=0 ; j<size ; j++){
       printf("%f ", A[i][j]);
     }
     printf("\n");
-  }
-  */
+  }*/
+  
   
   //double *soluce = femFullSystemEliminate(theProblem->system);
   double *soluce = femBandSystemEliminate(theProblem, A, B, size);
