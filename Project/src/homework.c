@@ -628,6 +628,13 @@ int* RenumberCuthill(femGeo *theGeometry) {
         r[theGeometry->theNodes->nNodes - i - 1] = temp;
     }
 
+    free(r);
+    int* renumber = malloc(sizeof(int) * theGeometry->theNodes->nNodes*2);
+    for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+        renumber[2*i] = 2*r[i];
+        renumber[2*i+1] = 2*r[i]+1;
+    }
+
     //printf("avant de free Renumber Cuthill\n");
     // section free (j'ai été un peu vite la dessus)   
     for (int i = 0; i < list_size; i++) {
@@ -662,7 +669,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
     
     //printf("fin Renumber Cuthill\n");
 
-    return r; 
+    return renumber; 
 
   
  }
