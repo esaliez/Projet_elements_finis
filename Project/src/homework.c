@@ -287,6 +287,7 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       //femFullSystemConstrain(theSystem, 2 * node + 0, value * nx);
       //femFullSystemConstrain(theSystem, 2 * node + 1, value * ny);
     }
+    
     if (type == DIRICHLET_T) {
       double value = theConstrainedNode->value1;
       double nx = theConstrainedNode->nx;
@@ -301,6 +302,8 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
       //femFullSystemConstrain(theSystem, 2 * node + 0, tx);
       //femFullSystemConstrain(theSystem, 2 * node + 1, ty);
     }
+
+
     if (type == DIRICHLET_NT) {
       double value_n = theConstrainedNode->value1;
       double value_t = theConstrainedNode->value2;
@@ -329,7 +332,7 @@ int matrixComputeBand(double **A, int size) {
             }
         }
     }
-    return myBand;
+    return myBand++;
 }
 
 
@@ -385,7 +388,12 @@ double *femBandSystemEliminate(femProblem *theProblem, double **A, double *B, in
       printf("\n");
     }
     printf("\n%d",1);
-
+    /*
+    int *renumber = malloc(sizeof(int)*24);
+    for(int i = 0; i<24; i++){
+      renumber[i] = i;
+    }
+    */
     
     localMatrix *newlocal = matrixLocalCreate(size, A, B, renumber);
 
@@ -637,6 +645,14 @@ int* RenumberCuthill(femGeo *theGeometry) {
 
     //printf("avant de free Renumber Cuthill\n");
     // section free (j'ai été un peu vite la dessus)   
+    int* renumber = malloc(sizeof(int) * theGeometry->theNodes->nNodes*2);
+    for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+        renumber[2*i] = 2*r[i];
+        renumber[2*i+1] = 2*r[i]+1;
+    }
+    free(r);
+    //printf("avant de free Renumber Cuthill\n");
+    // section free (j'ai été un peu vite la dessus)   
     for (int i = 0; i < list_size; i++) {
         free(list[i]);
     }
@@ -662,17 +678,21 @@ int* RenumberCuthill(femGeo *theGeometry) {
     r
    }
 */
-    for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+    for (int i = 0; i < 2*theGeometry->theNodes->nNodes; i++) {
         //theGeometry->theNodes->number[i] = r[i];
-        printf("%d ",r[i]);
+        printf("%d ",renumber[i]);
     }
     
     //printf("fin Renumber Cuthill\n");
 
     return renumber; 
+<<<<<<< Updated upstream
 
   
  }
+=======
+}
+>>>>>>> Stashed changes
 
   double *femElasticitySolve(femProblem *theProblem) {
   femBandSystem *theSystem = theProblem->system;

@@ -2,7 +2,8 @@ pour vérifier:
 -la pression hydrostatique, calculer à la main et comparer
 -le code, comparer avec fem_full_test
 -justifier le maillage en changeant la taille et jusqu'a atteindre une différence de déformation négligeable.(se renseigner sur la ductilité du béton, normalement c'est rupture fragile donc supporte très peu les déplacement en cisaillement)
-
+-vérifier que la mémoire est correctement allouée
+-nettoyer le code et le commenter
 
 
 
@@ -60,3 +61,9 @@ Si vous avez des conditions frontières bizzares, quelques mots sur leur implém
 
 
 
+de r´ediger une note de synth`ese d’au maximum 2 pages pour votre mission de conseil. Fournir une
+estimation de l’ordre de pr´ecision du r´esultat obtenu en expliquant comment vous avez valid´e votre
+code num´erique. Produire quelques illustrations pertinentes pour l’analyse de la solution. Expliquer
+comment vous avez optimis´e votre programme afin qu’il soit le plus rapide possible. Ne pas recopier
+les d´eveloppements th´eoriques du syllabus, ne pas recopier l’´enonc´e du probl`eme, ne pas fournir des
+diagrammes incompr´ehensibles, ne pas donner des tableaux de chiffres indigestes. L’orthographe, la
