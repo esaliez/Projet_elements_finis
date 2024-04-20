@@ -13,14 +13,17 @@ double geoSize(double x, double y) {
   
   femGeo *theGeometry = geoGetGeometry();
   double h = theGeometry->h;
-  int h_min = 100; //taille minimale des triangles
-  int h_max = 25; //taille maximale des triangles
 
-  int b_X_1 = 15; //taille de la  zone grande précision coté gauche
-  int b_X_2 = 25; //taille de la zone de transistion entre grande et petite précision
-  int b_X_3 = 195; //taille maximale en x
 
-  int b_Y_1 = 285; //taille maximale en y (début de la zone de grande précision en y)
+  int h_min = 1; //taille minimale des triangles 3
+  int h_max = 40; //taille maximale des triangles 6
+
+  int b_X_1 = 2; //taille de la  zone grande précision coté gauche 20
+  int b_X_2 = 5; //taille de la zone de transistion entre grande et petite précision 5
+  int b_X_3 = 195; //taille maximale du barrage en x 
+  
+  int coeff_y = 1; //coefficient de mutiplication de la taille minimal des triangles en fonction de y
+  int b_Y_1 = 285; //début de la zone de grande précision en y
   int b_Y_2 = 220; //zone intermédiaire en y (pas utilisée pour l'instant)
   int b_Y_3 = 0; //fin de zone en y (pas utilisée pour l'instant)
 
@@ -28,14 +31,18 @@ double geoSize(double x, double y) {
   if(x <= b_X_1) {
     h = h_min;
   }
+  
   //transisition entre la précision à gauche et la zone qui évolue selon y
-  else if(x > b_X_1 && x <= b_X_2){
+  else if(x > b_X_1 && x <= b_X_2+b_X_1){
     h = h_min + (x - b_X_1)/(b_X_1);
   }
   //zone qui évolue selon y, grande précision en haut et faible en bas
-  else if(x > b_X_2){
-     h = h_min + (b_Y_1-y)/(b_Y_1/h_max);
+  else if(x > b_X_1+b_X_2){
+     h = h_min + coeff_y*(b_Y_1-y)/(b_Y_1/h_max);
   }
+  
+  h = 2;
+  
   return h;
 }
 

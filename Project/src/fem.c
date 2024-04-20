@@ -159,11 +159,7 @@ void geoMeshRead(const char *filename) {
   for (int i = 0; i < theNodes->nNodes; i++) {
     ErrorScan(fscanf(file, "%d : %le %le \n", &trash, &theNodes->X[i], &theNodes->Y[i]));
   }
-///////////////////ajout
-    theNodes->number = malloc(sizeof(int)*theNodes->nNodes);
-   for (int i = 0; i < theNodes->nNodes; i++) 
-        theNodes->number[i] = i;/// 
-/////////////////////////
+
   femMesh *theEdges = malloc(sizeof(femMesh));
   theGeometry.theEdges = theEdges;
   theEdges->nLocalNode = 2;
@@ -394,103 +390,6 @@ void femDiscretePrint(femDiscrete *mySpace) {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////ajout
-femBandSystem *femBandSystemCreate(int size, int band)
-{
-    femBandSystem *myBandSystem = malloc(sizeof(femBandSystem));
-    myBandSystem->B = malloc(sizeof(double)*size*(band+1));
-    myBandSystem->A = malloc(sizeof(double*)*size);        
-    myBandSystem->size = size;
-    myBandSystem->band = band;
-    myBandSystem->A[0] = myBandSystem->B + size;
-    int i;
-    for (i=1 ; i < size ; i++) 
-        myBandSystem->A[i] = myBandSystem->A[i-1] + band - 1;
-    femBandSystemInit(myBandSystem);
-    return(myBandSystem);
-}
- 
-void femBandSystemFree(femBandSystem *myBandSystem)
-{
-    free(myBandSystem->B);
-    free(myBandSystem->A); 
-    free(myBandSystem);
-}
- 
-void femBandSystemInit(femBandSystem *myBandSystem)
-{
-    int i;
-    int size = myBandSystem->size;
-    int band = myBandSystem->band;
-    for (i=0 ; i < size*(band+1) ; i++) 
-        myBandSystem->B[i] = 0;        
-}
- 
-void femBandSystemPrint(femBandSystem *myBand)
-{
-    double  **A, *B;
-    int     i, j, band, size;
-    A    = myBand->A;
-    B    = myBand->B;
-    size = myBand->size;
-    band = myBand->band;
-
-    for (i=0; i < size; i++) {
-        for (j=i; j < i+band; j++)
-            if (A[i][j] == 0) printf("         ");   
-            else              printf(" %+.1e",A[i][j]);
-        printf(" :  %+.1e \n",B[i]); }
-}
-  
-void femBandSystemPrintInfos(femBandSystem *myBand)
-{
-    int size = myBand->size;
-    int band = myBand->band;
-    printf(" \n");
-    printf("    Banded Gaussian elimination \n");
-    printf("    Storage informations \n");
-    printf("    Matrix size      : %8d\n",size);
-    printf("    Matrix band      : %8d\n",band);
-    printf("    Bytes required   : %8d\n",(int)sizeof(double)*size*(band+1));     
-}
-
-
-double femBandSystemGet(femBandSystem* myBandSystem, int myRow, int myCol)
-{
-    double value = 0;
-    if (myCol >= myRow && myCol < myRow+myBandSystem->band)  value = myBandSystem->A[myRow][myCol]; 
-    return(value);
-}
-
-void femBandSystemSet(femBandSystem* myBandSystem, int myRow, int myCol, double myValue)
-{
-    if (myCol >= myRow && myCol < myRow+myBandSystem->band)  myBandSystem->A[myRow][myCol] = myValue; 
-}
-
-void femBandSystemConstrain(femBandSystem *mySystem, int myNode, double myValue) {
-  double **A, *B;
-  int i, size;
-
-  A = mySystem->A;
-  B = mySystem->B;
-  size = mySystem->size;
-
-  for (i = 0; i < size; i++) {
-    B[i] -= myValue * A[i][myNode];
-    A[i][myNode] = 0;
-  }
-
-  for (i = 0; i < size; i++)
-    A[myNode][i] = 0;
-
-  A[myNode][myNode] = 1;
-  B[myNode] = myValue;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-
-
 femFullSystem *femFullSystemCreate(int size) {
   femFullSystem *theSystem = malloc(sizeof(femFullSystem));
   femFullSystemAlloc(theSystem, size);
@@ -640,14 +539,12 @@ femProblem *femElasticityCreate(femGeo *theGeometry, double E, double nu, double
   }
   theProblem->spaceEdge = femDiscreteCreate(2, FEM_EDGE);
   theProblem->ruleEdge = femIntegrationCreate(2, FEM_EDGE);
-  //theProblem->system = femFullSystemCreate(size);
-  theProblem->system = femBandSystemCreate(size,size);///ajout
+  theProblem->system = femFullSystemCreate(size);
   return theProblem;
 }
 
 void femElasticityFree(femProblem *theProblem) {
-  //femFullSystemFree(theProblem->system);
-  femBandSystemFree(theProblem->system);///ajout
+  femFullSystemFree(theProblem->system);
   femIntegrationFree(theProblem->rule);
   femDiscreteFree(theProblem->space);
   for (int i = 0; i < theProblem->nBoundaryConditions; i++)
@@ -797,9 +694,8 @@ void femElasticityPrint(femProblem *theProblem) {
       printf(" imposing %9.2e as the normal force  \n", value1);
     if (theCondition->type == NEUMANN_T)
       printf(" imposing %9.2e as the tangential force  \n", value1);
-    
-    if (theCondition->type == NEUMANN_HYDROSTAT)
-      printf(" imposing %9.2e as the hydrostatic pressure  \n", value1);
+      if (theCondition->type == NEUMANN_HYDROSTAT)
+      printf(" imposing %9.2e as the hydrostatic presure  \n", value1);
   }
   printf(" ======================================================================================= \n\n");
 }
@@ -868,7 +764,7 @@ void femElasticityWrite(femProblem *theProblem, const char *filename) {
       fprintf(file, " Neumann-T          = %14.7e, %14.7e ", value1, NAN);
       break;
     case NEUMANN_HYDROSTAT:
-      fprintf(file, " Neumann-Hydrostat  = %14.7e, %14.7e ", value1, NAN);
+      fprintf(file, " Neumann-Hydrostat         = %14.7e, %14.7e ", value1, NAN);
       break;
     default:
       fprintf(file, " Undefined          = %14.7e, %14.7e ", NAN, NAN);
@@ -919,8 +815,7 @@ femProblem *femElasticityRead(femGeo *theGeometry, const char *filename) {
   }
   theProblem->spaceEdge = femDiscreteCreate(2, FEM_EDGE);
   theProblem->ruleEdge = femIntegrationCreate(2, FEM_EDGE);
-  //theProblem->system = femFullSystemCreate(size);
-  theProblem->system = femBandSystemCreate(size,size);///ajout
+  theProblem->system = femFullSystemCreate(size);
 
   char theLine[MAXNAME];
   char theDomain[MAXNAME];
