@@ -300,7 +300,7 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
 
       b[2*node] = value*nx + tx*(bt - value*atn);
       b[2*node+1] = value*ny + ty*(bt - value*atn); 
-}
+    }
 
 
 
@@ -347,7 +347,7 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
 
         b[2*node] = value*tx + nx*(bt - value*atn);
         b[2*node+1] = value*ty + ny*(bt - value*atn);
-}
+      }
 
 
       if (type == DIRICHLET_NT) {
@@ -420,11 +420,21 @@ localMatrix *matrixLocalCreate(int size, double **A, double *B, int *r){
 
 //je resoud plus vite puis je remets dans mon A pour que ça corresponde au mesh
 double *femBandSystemEliminate(femProblem *theProblem) {
+
+    
     femGeo *theGeometry = theProblem->geometry;
     femFullSystem *theSystem = theProblem->system;
     double** A = theSystem->A;
     double * B = theSystem->B;
     int size = theProblem->system->size;
+
+  printf("Matrix:\n");
+  for(int i = 0; i < size; i++){
+    for(int j = 0; j < size; j++){
+      printf("%.2f ", A[i][j]);
+    }
+    printf("\n");
+  }
     
     
     int i,j,k,jend;
@@ -432,11 +442,18 @@ double *femBandSystemEliminate(femProblem *theProblem) {
     int bandA, band;
     
     bandA = matrixComputeBand(A, size);
+  // Affichage de la matrice
+
+
+    int* renumber = RenumberCuthill(A, size);
+
+    printf("Bande initiale: %d\n", bandA);
+    // On trouve le vecteur de renumeration avec reverse cuthillmackee
+    for (int i = 0; i < size; i++) {
+    printf("%d ", renumber[i]);}
+    printf("\n");
     
 
-    int* renumber = RenumberCuthill(theGeometry);
-
-    
     //TEST
     /*
     int *renumber = malloc(sizeof(int)*size);
@@ -449,6 +466,8 @@ double *femBandSystemEliminate(femProblem *theProblem) {
     localMatrix *newlocal = matrixLocalCreate(size, A, B, renumber);//a changer stp
     
     band = matrixComputeBand(newlocal->Aloc, size);
+
+    printf("Bande renumerotee: %d\n", band);
       
 
     A = newlocal->Aloc;
@@ -508,116 +527,48 @@ double *femBandSystemEliminate(femProblem *theProblem) {
   return (DEGREE[x] - DEGREE[y]);
   }
 
-int* RenumberCuthill(femGeo *theGeometry) {
+int* RenumberCuthill(double** matrice, int matrice_size){
   //printf("début Renumber Cuthill\n");
   //avoir une liste avec les noeuds et leurs degres
-  femMesh *mesh = theGeometry->theElements;
-  int *elem_list = mesh->elem;
+  int **list = malloc(sizeof(int*) * matrice_size);
+  int *degrees = malloc(sizeof(int) * matrice_size);
 
-  int list_size = mesh->nElem*mesh->nLocalNode*2;
-  int **list = malloc(sizeof(int*) * list_size);
-
-  for (int i = 0; i < list_size; i++) {
-      list[i] = malloc(2*sizeof(int));
+  for(int i = 0; i < matrice_size; i++){
+    list[i] = malloc(sizeof(int)*50);
+    degrees[i] = 0;
+    for(int j = 0; j < matrice_size; j++){
+      if(matrice[i][j] != 0 && i != j){
+        list[i][degrees[i]++] = j;
+        if(degrees[i]>=50){printf("Attention, le nombre de noeuds est trop grand pour la liste du noeud : %d\n",i);}
+      }
     }
-
-
-    //étape 1 : créer tous les éléments i-j et j-i
-  for (int i = 0; i < (mesh->nElem); i++) {
-    
-      
-    //on suppose nLocalNode = 3 sinon trop compliqué
-    list[2*i*mesh->nLocalNode][0] = elem_list[i*mesh->nLocalNode];
-    list[2*i*mesh->nLocalNode][1] = elem_list[i*mesh->nLocalNode+1];
-    list[2*i*mesh->nLocalNode+1][0] = elem_list[i*mesh->nLocalNode];
-    list[2*i*mesh->nLocalNode+1][1] = elem_list[i*mesh->nLocalNode+2];
-    list[2*i*mesh->nLocalNode+2][0] = elem_list[i*mesh->nLocalNode+1];
-    list[2*i*mesh->nLocalNode+2][1] = elem_list[i*mesh->nLocalNode];
-    list[2*i*mesh->nLocalNode+3][0] = elem_list[i*mesh->nLocalNode+1];
-    list[2*i*mesh->nLocalNode+3][1] = elem_list[i*mesh->nLocalNode+2];
-    list[2*i*mesh->nLocalNode+4][0] = elem_list[i*mesh->nLocalNode+2];
-    list[2*i*mesh->nLocalNode+4][1] = elem_list[i*mesh->nLocalNode];
-    list[2*i*mesh->nLocalNode+5][0] = elem_list[i*mesh->nLocalNode+2];
-    list[2*i*mesh->nLocalNode+5][1] = elem_list[i*mesh->nLocalNode+1];
   }
-  //etape 2 : trier la liste 
 
 
 
-  qsort(list, list_size, sizeof(int*), compare);
 
-  //etxpe 3 : supprimer les doublons   => bien faux mais hassoul
-
-    int **list_whithout_duplicates = malloc(list_size * sizeof(int*));
-    //for (int i = 0; i < list_size; i++) {
-    //    list_whithout_duplicates[i] = malloc(2*sizeof(int));
-    //  }
-    //printf("avant list_whithout_duplicate\n");
-        
-
-    int size = 1;
-    list_whithout_duplicates[0] = list[0];
-    for (int i = 1; i < list_size; i++) {
-        if (list[i][0] != list[i - 1][0] || list[i][1] != list[i - 1][1]) {
-            list_whithout_duplicates[size++] = list[i];
-        }
-    }
-    //printf("après list_whithout_duplicate\n");
-    
-
-  //etape 4 : créer les vecteurs col et rptr 
-
-  int *col = malloc(sizeof(int) * size); 
-  int *rptr = malloc(sizeof(int) * (theGeometry->theNodes->nNodes+1));
-  int *degree = malloc(sizeof(int) * (theGeometry->theNodes->nNodes));
-
-  rptr[0]=0;
-
-
-  int num_col = 0;
-  int num = 0;
-  int noeud_actuel = list_whithout_duplicates[0][0];
-
-  //printf("intermédiaire\n");
-  
-  for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
-    degree[i]=0;
-    while(num < size-1 && list_whithout_duplicates[num][0] == noeud_actuel ){
-
-
-      col[num_col++] = list_whithout_duplicates[num++][1]; //size-1 me parait bizarre 
-      degree[i]++;}
-    
-    rptr[i] = num_col;
-    noeud_actuel = list_whithout_duplicates[num][0];
-    
-
-
-  }
-  //printf("millieu Renumber Cuthill\n");
-
-//Instantiate an empty queue Q and empty array for permutation order of the objects R.
-  int *q = malloc(sizeof(int)*theGeometry->theNodes->nNodes*theGeometry->theNodes->nNodes);
-  int *r = malloc(sizeof(int)*theGeometry->theNodes->nNodes);
+  //Instantiate an empty queue Q and empty array for permutation order of the objects R.
+  int *q = malloc(sizeof(int)*matrice_size*matrice_size);
+  int *r = malloc(sizeof(int)*matrice_size);
   int next_empty_q = 0;
   int first_filled_q = 0;
   int next_empty_r = 0;
-  bool *not_visited = malloc(sizeof(int)*theGeometry->theNodes->nNodes);
+  bool *not_visited = malloc(sizeof(int)*matrice_size);
 
 //S1: We first find the object with minimum degree whose index has not yet been added to R. 
 //    Say, object corresponding to pth row has been identified as the object with a minimum degree. Add p to R.
 
-  for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
+  for (int i = 0; i < matrice_size; i++) {
     not_visited[i] = true;
   }
 
-  int actual_degree = degree[0];
+  int actual_degree = degrees[0];
   int minimum_node = 0;
   bool change = true;
 
-    for (int i = 0; i< theGeometry->theNodes->nNodes; i++) {
-      if(degree[i] < actual_degree && not_visited[i]){
-        actual_degree = degree[i];
+    for (int i = 0; i< matrice_size; i++) {
+      if(degrees[i] < actual_degree && not_visited[i]){
+        actual_degree = degrees[i];
         minimum_node = i;
       }
     }
@@ -635,14 +586,13 @@ int* RenumberCuthill(femGeo *theGeometry) {
     //    in increasing order of degree, to Q. The neighbors are nodes with non-zero value amongst the 
     //    non-diagonal elements in the pth row.
       
-        for (int i = rptr[minimum_node]; i < rptr[minimum_node+1]; i++) {
-          q[next_empty_q++] = col[i];
-        }
-        //printf("next_empty_q : %d, size : %d \n", next_empty_q, theGeometry->theNodes->nNodes * theGeometry->theNodes->nNodes);
-        //printf("avant compare2 Renumber Cuthill\n");
+      for (int k = 0; k < degrees[minimum_node]; k++) {
+        q[next_empty_q++] = list[minimum_node][k];
+      }
+        
 
-      DEGREE = degree;
-      qsort(q, next_empty_q, sizeof(int), compare2);
+      DEGREE = degrees;
+      qsort(&q[first_filled_q], next_empty_q-first_filled_q, sizeof(int), compare2);
       //printf("après compare2 Renumber Cuthill\n");
 
 
@@ -658,8 +608,8 @@ int* RenumberCuthill(femGeo *theGeometry) {
             r[next_empty_r++] = C;
             not_visited[C] = false;
             int scission = next_empty_q;
-            for (int j = rptr[C]; j < rptr[C+1]; j++) {
-              q[next_empty_q++] = col[j];
+            for (int j = 0; j < degrees[C]; j++) {
+              q[next_empty_q++] = list[C][j];
             }
             qsort(&q[scission], next_empty_q-scission, sizeof(int), compare2);//il faut sort à partir de scission à mon avis ce que j'ai mis est faux 
         }
@@ -669,13 +619,13 @@ int* RenumberCuthill(femGeo *theGeometry) {
     //    once again. (This could happen if there are disjoint graphs)
     //S6: Terminate this algorithm once all objects are included in R.
     change = false;
-    actual_degree = 10000;
-    for (int i = 0; i< theGeometry->theNodes->nNodes; i++) {
-    if(degree[i] < actual_degree && not_visited[i]){
-      actual_degree = degree[i];
-      minimum_node = i;
-      change = true;
-      }
+    actual_degree = matrice_size+1;
+    for (int i = 0; i< matrice_size; i++) {
+      if(degrees[i] < actual_degree && not_visited[i]){
+        actual_degree = degrees[i];
+        minimum_node = i;
+        change = true;
+        }
     }
   }
 
@@ -683,41 +633,30 @@ int* RenumberCuthill(femGeo *theGeometry) {
     //S7: Finally, reverse the indices in R, i.e. (swap(R[i], R[P-i+1])).
   
     int temp;
-    for (int i = 0; i < theGeometry->theNodes->nNodes / 2; i++) {
+    for (int i = 0; i < matrice_size / 2; i++) {
         temp = r[i];
-        r[i] = r[theGeometry->theNodes->nNodes - i - 1];
-        r[theGeometry->theNodes->nNodes - i - 1] = temp;
+        r[i] = r[matrice_size - i - 1];
+        r[matrice_size - i - 1] = temp;
     }
 
     //printf("avant de free Renumber Cuthill\n");
     // section free (j'ai été un peu vite la dessus)   
-    int* renumber = malloc(sizeof(int) * theGeometry->theNodes->nNodes*2);
-    for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
-        renumber[2*i] = 2*r[i];
-        renumber[2*i+1] = 2*r[i]+1;
-        
-    }
-    free(r);
+
     //printf("avant de free Renumber Cuthill\n");
     // section free (j'ai été un peu vite la dessus)   
-    for (int i = 0; i < list_size; i++) {
+    for (int i = 0; i < matrice_size; i++) {
         free(list[i]);
     }
 
     free(list);
-
-   
-
-    free(col);
-    free(rptr);
     //printf("trois quart free Renumber Cuthill\n");
-    free(degree);
+    free(degrees);
     free(q);
     //free(r);
     free(not_visited);
 
 
-    return renumber; 
+    return r; //il faut free r après l'avoir utilisé 
 }
 
   double *femElasticitySolve(femProblem *theProblem) {
@@ -727,6 +666,8 @@ int* RenumberCuthill(femGeo *theGeometry) {
   femElasticityAssembleNeumann(theProblem);
 
   femElasticityApplyDirichlet(theProblem);
+
+
 
   double *soluce = femBandSystemEliminate(theProblem);
 

@@ -183,7 +183,7 @@ double *femBandSystemEliminate(femProblem *theProblem);
 double* InverseMatrix(double* B, int* r, int size);
 localMatrix *matrixLocalCreate(int size, double **A, double *B, int *r);
 
-int* RenumberCuthill(femGeo *theGeometry);
+int* RenumberCuthill(double** A, int size);
 int compare(const void *a, const void *b);
 int compare2(const void *a, const void *b);
 double calcul_hauteur(femProblem *theProblem, int iBnd);

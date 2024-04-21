@@ -15,6 +15,7 @@ double geoSize(double x, double y) {
   double h = theGeometry->h;
 
 
+
   int h_min = 1; //taille minimale des triangles 3
   int h_max = 40; //taille maximale des triangles 6
 
@@ -41,7 +42,7 @@ double geoSize(double x, double y) {
      h = h_min + coeff_y*(b_Y_1-y)/(b_Y_1/h_max);
   }
   
-  h = 2;
+  h = 6;
   
   return h;
 }
