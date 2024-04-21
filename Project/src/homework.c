@@ -139,7 +139,7 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
     double y_min = -1;//
     double y_moy;//distance au centre d'une arete depuis l'origine
     double POS; // position correcte avec 0 au dessus du barrage, donc négative. Correspond à y dans rho*g*y
-    double length; //longueur de l'arete
+    //double length; //longueur de l'arete
     int number_elem = theCondition->domain->nElem;
     for (int iEd = 0; iEd < theCondition->domain->nElem; iEd++) {
       iEl = theCondition->domain->elem[iEd];
@@ -174,7 +174,7 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
 
       double y_moy = (y[0]+y[1])/2; //
       POS = y_moy - hauteur;//
-      length = fabs(y[1] - y[0]);
+      //length = fabs(y[1] - y[0]);
 
       double tx = x[1] - x[0];
       double ty = y[1] - y[0];
@@ -201,8 +201,8 @@ void femElasticityAssembleNeumann(femProblem *theProblem) {
       }
       
       if (type == NEUMANN_HYDROSTAT){//
-        f_x = value * POS * length;//
-        //printf("%f,", f_x);//
+        f_x = value * POS;//
+        
       }//
 
       double r = 0.0;
@@ -259,37 +259,108 @@ void femElasticityApplyDirichlet(femProblem *theProblem) {
 
 
     if (type == DIRICHLET_N) {
+      
       double value = theConstrainedNode->value1;
-      double nx = theConstrainedNode->nx;
-      double ny = theConstrainedNode->ny;
-      femFullSystemConstrain(theSystem, 2 * node + 0, value * nx);
-      femFullSystemConstrain(theSystem, 2 * node + 1, value * ny);
-    }
-  
-    
-    if (type == DIRICHLET_T) {
-      double value = theConstrainedNode->value1;
-      double nx = theConstrainedNode->nx;
-      double ny = theConstrainedNode->ny;
-      double tx = -ny*value;
-      double ty = nx*value;
-      femFullSystemConstrain(theSystem, 2 * node + 0, tx);
-      femFullSystemConstrain(theSystem, 2 * node + 1, ty);
-    }
-
-
-    if (type == DIRICHLET_NT) {
-      double value_n = theConstrainedNode->value1;
-      double value_t = theConstrainedNode->value2;
       double nx = theConstrainedNode->nx;
       double ny = theConstrainedNode->ny;
       double tx = -ny;
       double ty = nx;
-      femFullSystemConstrain(theSystem, 2 * node + 0, value_n * nx + value_t * tx); 
-      femFullSystemConstrain(theSystem, 2 * node + 1, value_n * ny + value_t * ty);
+
+      double **a, *b;
+      int i, size, band;
+      double cx, cy, lx, ly; //attention si t'as mis int à la place de double ici tu perds instantanément 3h de ta vie à débeug
+
+      a    = theSystem->A;
+      b    = theSystem->B;
+      size = theSystem->size;
+      
+      double att =  (tx * (tx * a[2*node][2*node] + ty * a[2*node+1][2*node]) + ty * (tx * a[2*node][2*node+1] + ty * a[2*node+1][2*node+1]));
+      double atn =  (nx * (tx * a[2*node][2*node] + ty * a[2*node+1][2*node]) + ny * (tx * a[2*node][2*node+1] + ty * a[2*node+1][2*node+1]));
+      double bt = tx * b[2*node] + ty * b[2*node+1];
+
+      for(int i = 0; i < size; i++) { //on mets les autres lignes et collones à jour
+        
+        cx=a[i][2*node];
+        cy=a[i][2*node+1];
+        lx=a[2*node][i];
+        ly=a[2*node+1][i];
+
+        a[i][2*node] = tx*(cx*tx + cy*ty);
+        a[i][2*node+1] = ty*(cx*tx + cy*ty);
+        a[2*node][i] = tx*(lx*tx + ly*ty);
+        a[2*node+1][i] = ty*(lx*tx + ly*ty);
+        b[i] -= value*(nx*cx + ny*cy);
+      }
+
+      // On effectue les opérations sur la petite matrice
+      a[2*node][2*node] = nx*nx + tx*tx*att;
+      a[2*node][2*node+1] = nx*ny + tx*ty*att;
+      a[2*node+1][2*node] = nx*ny + ty*tx*att;
+      a[2*node+1][2*node+1] = ny*ny + ty*ty*att;
+
+      b[2*node] = value*nx + tx*(bt - value*atn);
+      b[2*node+1] = value*ny + ty*(bt - value*atn); 
+}
 
 
-    }
+
+      
+      if (type == DIRICHLET_T) {
+
+        double value = theConstrainedNode->value1;
+        double nx = theConstrainedNode->nx;
+        double ny = theConstrainedNode->ny;
+        double tx = ny;
+        double ty = -nx;
+
+        double **a, *b;
+        int i, size, band;
+        double cx, cy, lx, ly;
+
+        a    = theSystem->A;
+        b    = theSystem->B;
+        size = theSystem->size;
+        
+        double att =  (nx * (nx * a[2*node][2*node] + ny * a[2*node+1][2*node]) + ny * (nx * a[2*node][2*node+1] + ny * a[2*node+1][2*node+1]));
+        double atn =  (tx * (nx * a[2*node][2*node] + ny * a[2*node+1][2*node]) + ty * (nx * a[2*node][2*node+1] + ny * a[2*node+1][2*node+1]));
+        double bt = nx * b[2*node] + ny * b[2*node+1];
+
+        for(int i = 0; i < size; i++) { //on mets les autres lignes et collones à jour
+          
+          cx=a[i][2*node];
+          cy=a[i][2*node+1];
+          lx=a[2*node][i];
+          ly=a[2*node+1][i];
+
+          a[i][2*node] = nx*(cx*nx + cy*ny);
+          a[i][2*node+1] = ny*(cx*nx + cy*ny);
+          a[2*node][i] = nx*(lx*nx + ly*ny);
+          a[2*node+1][i] = ny*(lx*nx + ly*ny);
+          b[i] -= value*(tx*cx + ty*cy);
+        }
+
+        // On effectue les opérations sur la petite matrice 
+        a[2*node][2*node] = tx*tx + nx*nx*att;
+        a[2*node][2*node+1] = tx*ty + nx*ny*att;
+        a[2*node+1][2*node] = tx*ty + ny*nx*att;
+        a[2*node+1][2*node+1] = ty*ty + ny*ny*att;
+
+        b[2*node] = value*tx + nx*(bt - value*atn);
+        b[2*node+1] = value*ty + ny*(bt - value*atn);
+}
+
+
+      if (type == DIRICHLET_NT) {
+        double value_n = theConstrainedNode->value1;
+        double value_t = theConstrainedNode->value2;
+        double nx = theConstrainedNode->nx;
+        double ny = theConstrainedNode->ny;
+  
+        double tx = -ny;
+        double ty = nx;
+        femFullSystemConstrain(theSystem, 2 * node + 0, value_n * nx + value_t * tx);
+        femFullSystemConstrain(theSystem, 2 * node + 1, value_n * ny + value_t * ty);
+      }
   }
 }
 
@@ -361,6 +432,7 @@ double *femBandSystemEliminate(femProblem *theProblem) {
     int bandA, band;
     
     bandA = matrixComputeBand(A, size);
+    
 
     int* renumber = RenumberCuthill(theGeometry);
 
@@ -377,7 +449,7 @@ double *femBandSystemEliminate(femProblem *theProblem) {
     localMatrix *newlocal = matrixLocalCreate(size, A, B, renumber);//a changer stp
     
     band = matrixComputeBand(newlocal->Aloc, size);
-    //printf("band = %d\n", band);  
+      
 
     A = newlocal->Aloc;
     B = newlocal->Bloc; //modifie pour avoir Aloc et Bloc
@@ -623,6 +695,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
     for (int i = 0; i < theGeometry->theNodes->nNodes; i++) {
         renumber[2*i] = 2*r[i];
         renumber[2*i+1] = 2*r[i]+1;
+        
     }
     free(r);
     //printf("avant de free Renumber Cuthill\n");
@@ -633,12 +706,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
 
     free(list);
 
-    //printf("millieu free Renumber Cuthill\n");
-    //for (int i = 0; i < list_size; i++) {
-    //    free(list_whithout_duplicates[i]);
-    //}
-    //printf("après for free Cuthill\n");
-    //free(list_whithout_duplicates);
+   
 
     free(col);
     free(rptr);
@@ -647,17 +715,7 @@ int* RenumberCuthill(femGeo *theGeometry) {
     free(q);
     //free(r);
     free(not_visited);
-/*
-   for(int i = 0; i < theGeometry->theNodes->nNodes; i++){
-    r
-   }
-*/
-    for (int i = 0; i < 2*theGeometry->theNodes->nNodes; i++) {
-        //theGeometry->theNodes->number[i] = r[i];
-        //printf("%d ",renumber[i]);
-    }
-    
-    //printf("fin Renumber Cuthill\n");
+
 
     return renumber; 
 }
