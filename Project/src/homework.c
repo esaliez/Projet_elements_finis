@@ -428,13 +428,7 @@ double *femBandSystemEliminate(femProblem *theProblem) {
     double * B = theSystem->B;
     int size = theProblem->system->size;
 
-  printf("Matrix:\n");
-  for(int i = 0; i < size; i++){
-    for(int j = 0; j < size; j++){
-      printf("%.2f ", A[i][j]);
-    }
-    printf("\n");
-  }
+
     
     
     int i,j,k,jend;
@@ -447,21 +441,10 @@ double *femBandSystemEliminate(femProblem *theProblem) {
 
     int* renumber = RenumberCuthill(A, size);
 
-    printf("Bande initiale: %d\n", bandA);
-    // On trouve le vecteur de renumeration avec reverse cuthillmackee
-    for (int i = 0; i < size; i++) {
-    printf("%d ", renumber[i]);}
-    printf("\n");
+
     
 
-    //TEST
-    /*
-    int *renumber = malloc(sizeof(int)*size);
-    for(int i = 0; i<size; i++){ //!!!!!!!!!!!
-      renumber[i] = i;
-      //printf("%d\n", renumber[i]);
-    }
-    */
+
 
     localMatrix *newlocal = matrixLocalCreate(size, A, B, renumber);//a changer stp
     
@@ -528,9 +511,13 @@ double *femBandSystemEliminate(femProblem *theProblem) {
   }
 
 int* RenumberCuthill(double** matrice, int matrice_size){
-  //printf("début Renumber Cuthill\n");
-  //avoir une liste avec les noeuds et leurs degres
-  int **list = malloc(sizeof(int*) * matrice_size);
+
+  //liste permettant de connaittre les voisins de chaque noeud de la matrice
+  //list[i][j] nous donne le j-ème voisin du noeud i
+  //on parle bien ici des points de la matrice et non des noeuds du maillage
+  int **list = malloc(sizeof(int*) * matrice_size); 
+  
+  //liste des degrés de chaque noeud
   int *degrees = malloc(sizeof(int) * matrice_size);
 
   for(int i = 0; i < matrice_size; i++){
@@ -547,7 +534,7 @@ int* RenumberCuthill(double** matrice, int matrice_size){
 
 
 
-  //Instantiate an empty queue Q and empty array for permutation order of the objects R.
+  
   int *q = malloc(sizeof(int)*matrice_size*matrice_size);
   int *r = malloc(sizeof(int)*matrice_size);
   int next_empty_q = 0;
@@ -555,8 +542,8 @@ int* RenumberCuthill(double** matrice, int matrice_size){
   int next_empty_r = 0;
   bool *not_visited = malloc(sizeof(int)*matrice_size);
 
-//S1: We first find the object with minimum degree whose index has not yet been added to R. 
-//    Say, object corresponding to pth row has been identified as the object with a minimum degree. Add p to R.
+//S1:  Nous trouvons d'abord l'objet de degré minimum dont l'index n'a pas encore été ajouté à R.  
+//     Disons que l'objet correspondant à la pième ligne a été identifié comme l'objet ayant un degré minimum. On ajoute p à R.
 
   for (int i = 0; i < matrice_size; i++) {
     not_visited[i] = true;
@@ -574,34 +561,26 @@ int* RenumberCuthill(double** matrice, int matrice_size){
     }
 
   while(change){
-    //printf("------------début du while------------\n");
-
-   //next_empty_r<theGeometry->theNodes->nNodes &&
 
       r[next_empty_r++] = minimum_node;
       not_visited[minimum_node] = false;
 
 
-    //S2: As an index is added to R, and add all neighbors of the corresponding object at the index, 
-    //    in increasing order of degree, to Q. The neighbors are nodes with non-zero value amongst the 
-    //    non-diagonal elements in the pth row.
+      // S2 : Quand un indice est ajouté à R, ajoutez tous les voisins de l'objet correspondant à l'indice,
+      //      dans l'ordre croissant du degré, à Q. 
       
       for (int k = 0; k < degrees[minimum_node]; k++) {
         q[next_empty_q++] = list[minimum_node][k];
       }
-        
-
+      
       DEGREE = degrees;
       qsort(&q[first_filled_q], next_empty_q-first_filled_q, sizeof(int), compare2);
-      //printf("après compare2 Renumber Cuthill\n");
 
 
-
-
-    //S3: Extract the first node in Q, say C. If C has not been inserted in R, add it to R, add to Q the neighbors 
-    //    of C in increasing order of degree.
-    //S4: If Q is not empty, repeat S3.
-    int C;
+      // S3 : Extraire le premier nœud de Q, appelé C. Si C n'a pas été inséré dans R, l'ajouter à R, ajouter à Q les voisins
+      // de C dans l'ordre croissant du degré.
+      // S4 : Si Q n'est pas vide, répéter S3.
+      int C;
         while(first_filled_q < next_empty_q){
           C = q[first_filled_q++];
           if(not_visited[C]){
@@ -615,9 +594,8 @@ int* RenumberCuthill(double** matrice, int matrice_size){
         }
       
     }
-    //S5: If Q is empty, but there are objects in the matrix which have not been included in R, start from S1, 
-    //    once again. (This could happen if there are disjoint graphs)
-    //S6: Terminate this algorithm once all objects are included in R.
+      // S5 : Si Q est vide, mais qu'il reste des objets dans la matrice qui n'ont pas été inclus dans R, recommencez à partir de S1 une fois de plus. (Cela pourrait se produire s'il y a des graphes disjoints)
+      // S6 : Terminez cet algorithme une fois que tous les objets sont inclus dans R.
     change = false;
     actual_degree = matrice_size+1;
     for (int i = 0; i< matrice_size; i++) {
@@ -630,7 +608,7 @@ int* RenumberCuthill(double** matrice, int matrice_size){
   }
 
 
-    //S7: Finally, reverse the indices in R, i.e. (swap(R[i], R[P-i+1])).
+    // S7 : Enfin, inverser les indices dans R, c'est-à-dire (échanger R[i] avec R[P-i+1]).
   
     int temp;
     for (int i = 0; i < matrice_size / 2; i++) {
@@ -639,23 +617,15 @@ int* RenumberCuthill(double** matrice, int matrice_size){
         r[matrice_size - i - 1] = temp;
     }
 
-    //printf("avant de free Renumber Cuthill\n");
-    // section free (j'ai été un peu vite la dessus)   
-
-    //printf("avant de free Renumber Cuthill\n");
+ 
     // section free (j'ai été un peu vite la dessus)   
     for (int i = 0; i < matrice_size; i++) {
         free(list[i]);
     }
-
     free(list);
-    //printf("trois quart free Renumber Cuthill\n");
     free(degrees);
     free(q);
-    //free(r);
     free(not_visited);
-
-
     return r; //il faut free r après l'avoir utilisé 
 }
 
